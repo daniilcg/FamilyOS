@@ -1,0 +1,250 @@
+rules_version = '2';
+
+/**
+ * FamilyOS Firestore Security Rules
+ *
+ * Principles:
+ * - Authenticated users only
+ * - Users may only access families they belong to
+ * - Role-based writes: OWNER > ADMIN > MEMBER > GUEST
+ * - Guests are read-mostly
+ */
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function uid() {
+      return request.auth.uid;
+    }
+
+    function memberDoc(familyId) {
+      return get(/databases/$(database)/documents/families/$(familyId)/members/$(uid()));
+    }
+
+    function isFamilyMember(familyId) {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/families/$(familyId)/members/$(uid()));
+    }
+
+    function memberRole(familyId) {
+      return memberDoc(familyId).data.role;
+    }
+
+    function isOwner(familyId) {
+      return isFamilyMember(familyId) && memberRole(familyId) == 'OWNER';
+    }
+
+    function isAdmin(familyId) {
+      return isFamilyMember(familyId)
+        && (memberRole(familyId) == 'OWNER' || memberRole(familyId) == 'ADMIN');
+    }
+
+    function isFullMember(familyId) {
+      return isFamilyMember(familyId)
+        && (memberRole(familyId) == 'OWNER'
+          || memberRole(familyId) == 'ADMIN'
+          || memberRole(familyId) == 'MEMBER');
+    }
+
+    function isGuest(familyId) {
+      return isFamilyMember(familyId) && memberRole(familyId) == 'GUEST';
+    }
+
+    function unchanged(field) {
+      return !(field in request.resource.data)
+        || request.resource.data[field] == resource.data[field];
+    }
+
+    // ── users ──────────────────────────────────────────────────────────────
+    match /users/{userId} {
+      allow read: if isSignedIn() && uid() == userId;
+      allow create: if isSignedIn() && uid() == userId;
+      allow update: if isSignedIn() && uid() == userId;
+      allow delete: if isSignedIn() && uid() == userId;
+    }
+
+    // ── families ───────────────────────────────────────────────────────────
+    match /families/{familyId} {
+      allow read: if isFamilyMember(familyId);
+      allow create: if isSignedIn()
+        && request.resource.data.ownerId == uid()
+        && request.resource.data.keys().hasAll(['name', 'ownerId', 'inviteCode']);
+      allow update: if isAdmin(familyId)
+        && unchanged('ownerId');
+      allow delete: if isOwner(familyId);
+
+      // ── members (subcollection preferred) ───────────────────────────────
+      match /members/{memberId} {
+        allow read: if isFamilyMember(familyId);
+        allow create: if isSignedIn()
+          && (
+            // Owner/admin invites
+            isAdmin(familyId)
+            // Or self-join via invite flow (memberId == uid)
+            || (memberId == uid() && request.resource.data.userId == uid())
+          );
+        allow update: if isAdmin(familyId)
+          || (memberId == uid() && unchanged('role') && unchanged('userId'));
+        allow delete: if isAdmin(familyId)
+          || (memberId == uid() && !isOwner(familyId));
+      }
+    }
+
+    // Top-level members mirror (optional dual-write shape)
+    match /members/{memberId} {
+      allow read: if isSignedIn() && (
+        resource.data.userId == uid()
+        || (resource.data.familyId is string && isFamilyMember(resource.data.familyId))
+      );
+      allow create, update: if isSignedIn()
+        && request.resource.data.familyId is string
+        && (
+          isAdmin(request.resource.data.familyId)
+          || request.resource.data.userId == uid()
+        );
+      allow delete: if isSignedIn()
+        && resource.data.familyId is string
+        && (
+          isAdmin(resource.data.familyId)
+          || resource.data.userId == uid()
+        );
+    }
+
+    // ── shopping ───────────────────────────────────────────────────────────
+    match /shopping/{itemId} {
+      allow read: if isFamilyMember(resource.data.familyId);
+      allow create: if isFullMember(request.resource.data.familyId)
+        && request.resource.data.createdBy == uid();
+      allow update: if isFullMember(resource.data.familyId);
+      allow delete: if isAdmin(resource.data.familyId)
+        || (isFullMember(resource.data.familyId) && resource.data.createdBy == uid());
+    }
+
+    // ── tasks ──────────────────────────────────────────────────────────────
+    match /tasks/{taskId} {
+      allow read: if isFamilyMember(resource.data.familyId);
+      allow create: if isFullMember(request.resource.data.familyId)
+        && request.resource.data.createdBy == uid();
+      allow update: if isFullMember(resource.data.familyId);
+      allow delete: if isAdmin(resource.data.familyId)
+        || (isFullMember(resource.data.familyId) && resource.data.createdBy == uid());
+    }
+
+    // ── events ─────────────────────────────────────────────────────────────
+    match /events/{eventId} {
+      allow read: if isFamilyMember(resource.data.familyId);
+      allow create: if isFullMember(request.resource.data.familyId);
+      allow update: if isFullMember(resource.data.familyId);
+      allow delete: if isAdmin(resource.data.familyId)
+        || (isFullMember(resource.data.familyId) && resource.data.createdBy == uid());
+    }
+
+    // ── budgets ────────────────────────────────────────────────────────────
+    match /budgets/{txId} {
+      allow read: if isFamilyMember(resource.data.familyId);
+      allow create: if isFullMember(request.resource.data.familyId)
+        && request.resource.data.createdBy == uid();
+      allow update: if isAdmin(resource.data.familyId)
+        || (isFullMember(resource.data.familyId) && resource.data.createdBy == uid());
+      allow delete: if isAdmin(resource.data.familyId);
+    }
+
+    // ── documents ──────────────────────────────────────────────────────────
+    match /documents/{docId} {
+      allow read: if isFamilyMember(resource.data.familyId);
+      allow create: if isFullMember(request.resource.data.familyId)
+        && request.resource.data.uploadedBy == uid();
+      allow update: if isAdmin(resource.data.familyId)
+        || (isFullMember(resource.data.familyId) && resource.data.uploadedBy == uid());
+      allow delete: if isAdmin(resource.data.familyId)
+        || (isFullMember(resource.data.familyId) && resource.data.uploadedBy == uid());
+    }
+
+    // ── notes ──────────────────────────────────────────────────────────────
+    match /notes/{noteId} {
+      allow read: if isFamilyMember(resource.data.familyId);
+      allow create: if isFullMember(request.resource.data.familyId)
+        && request.resource.data.createdBy == uid();
+      allow update: if isFullMember(resource.data.familyId);
+      allow delete: if isAdmin(resource.data.familyId)
+        || (isFullMember(resource.data.familyId) && resource.data.createdBy == uid());
+    }
+
+    // ── chat threads ───────────────────────────────────────────────────────
+    match /chat/{threadId} {
+      allow read: if isFamilyMember(resource.data.familyId);
+      allow create: if isFullMember(request.resource.data.familyId)
+        && request.resource.data.createdBy == uid();
+      allow update: if isFullMember(resource.data.familyId);
+      allow delete: if isAdmin(resource.data.familyId);
+
+      match /messages/{messageId} {
+        allow read: if isFamilyMember(get(/databases/$(database)/documents/chat/$(threadId)).data.familyId);
+        allow create: if isFullMember(request.resource.data.familyId)
+          && request.resource.data.senderId == uid()
+          && request.resource.data.threadId == threadId;
+        allow update: if isFullMember(resource.data.familyId)
+          && (
+            // Sender edits own message body
+            resource.data.senderId == uid()
+            // Or any member updates read receipts only
+            || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readBy', 'updatedAt'])
+          );
+        allow delete: if isAdmin(resource.data.familyId)
+          || resource.data.senderId == uid();
+      }
+    }
+
+    // Top-level messages collection (alternate shape)
+    match /messages/{messageId} {
+      allow read: if isFamilyMember(resource.data.familyId);
+      allow create: if isFullMember(request.resource.data.familyId)
+        && request.resource.data.senderId == uid();
+      allow update: if isFullMember(resource.data.familyId)
+        && (
+          resource.data.senderId == uid()
+          || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readBy', 'updatedAt'])
+        );
+      allow delete: if isAdmin(resource.data.familyId)
+        || resource.data.senderId == uid();
+    }
+
+    // ── notifications ──────────────────────────────────────────────────────
+    match /notifications/{notificationId} {
+      allow read: if isSignedIn() && resource.data.userId == uid();
+      allow create: if isSignedIn()
+        && (
+          request.resource.data.userId == uid()
+          || (
+            request.resource.data.familyId is string
+            && isFullMember(request.resource.data.familyId)
+          )
+        );
+      allow update: if isSignedIn() && resource.data.userId == uid();
+      allow delete: if isSignedIn() && resource.data.userId == uid();
+    }
+
+    // ── ai_history ─────────────────────────────────────────────────────────
+    match /ai_history/{conversationId} {
+      allow read: if isSignedIn()
+        && resource.data.userId == uid()
+        && isFamilyMember(resource.data.familyId);
+      allow create: if isSignedIn()
+        && request.resource.data.userId == uid()
+        && isFullMember(request.resource.data.familyId);
+      allow update: if isSignedIn()
+        && resource.data.userId == uid()
+        && isFamilyMember(resource.data.familyId);
+      allow delete: if isSignedIn()
+        && resource.data.userId == uid();
+    }
+
+    // Deny everything else by default
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

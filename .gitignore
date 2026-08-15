@@ -1,0 +1,35 @@
+# Gradle
+.gradle/
+build/
+**/build/
+local.properties
+*.iml
+.idea/
+.DS_Store
+captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+*.aab
+*.ap_
+*.dex
+*.class
+dist/
+
+# Secrets — never commit
+google-services.json
+**/google-services.json
+!app/google-services.PLACEHOLDER.txt
+keystore.properties
+*.jks
+*.keystore
+
+# Kotlin
+.kotlin/
+
+# Logs / tooling
+*.log
+build_full.log
+
+# OS
+Thumbs.db

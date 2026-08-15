@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">FamilyOS</string>
+    <string name="channel_general_name">General</string>
+    <string name="channel_general_desc">General FamilyOS notifications</string>
+    <string name="channel_tasks_name">Tasks</string>
+    <string name="channel_tasks_desc">Task deadlines and assignments</string>
+    <string name="channel_family_name">Family</string>
+    <string name="channel_family_desc">Family invites, chat, and membership</string>
+    <string name="channel_sync_name">Sync</string>
+    <string name="channel_sync_desc">Background sync status</string>
+</resources>

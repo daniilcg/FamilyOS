@@ -1,0 +1,145 @@
+package com.familyos.feature.billing.ui
+
+import android.app.Activity
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+import com.familyos.core.domain.model.BillingProducts
+import com.familyos.core.ui.components.FamilyLoading
+import com.familyos.feature.billing.viewmodel.BillingUiState
+import com.familyos.feature.billing.viewmodel.BillingViewModel
+
+/**
+ * Premium paywall with monthly/yearly plans, restore, and entitlement summary.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun PaywallScreen(
+    state: BillingUiState,
+    onBindActivity: (Activity) -> Unit,
+    onPurchaseMonthly: () -> Unit,
+    onPurchaseYearly: () -> Unit,
+    onRestore: () -> Unit,
+    onExportPdf: () -> Unit,
+    onExportExcel: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val context = LocalContext.current
+    DisposableEffect(Unit) {
+        val activity = context as? Activity
+        if (activity != null) onBindActivity(activity)
+        onDispose { }
+    }
+
+    Scaffold(
+        modifier = modifier,
+        topBar = { TopAppBar(title = { Text("FamilyOS Premium") }) },
+    ) { padding ->
+        if (state.isLoading) {
+            FamilyLoading()
+            return@Scaffold
+        }
+        Column(
+            Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(16.dp)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(
+                if (state.subscription?.isPremium == true) "You are on Premium" else "Upgrade your family OS",
+                style = MaterialTheme.typography.headlineMedium,
+            )
+            Text(BillingViewModel.FREE_LIMITS_TEXT)
+            Text(BillingViewModel.PREMIUM_LIMITS_TEXT)
+
+            val monthly = state.products.firstOrNull { it.productId == BillingProducts.PREMIUM_MONTHLY }
+            val yearly = state.products.firstOrNull { it.productId == BillingProducts.PREMIUM_YEARLY }
+
+            PlanCard(
+                title = "Monthly",
+                price = monthly?.formattedPrice ?: "…",
+                subtitle = monthly?.description ?: BillingProducts.PREMIUM_MONTHLY,
+                enabled = !state.isPurchasing && state.subscription?.isPremium != true,
+                onClick = onPurchaseMonthly,
+            )
+            PlanCard(
+                title = "Yearly",
+                price = yearly?.formattedPrice ?: "…",
+                subtitle = yearly?.description ?: BillingProducts.PREMIUM_YEARLY,
+                enabled = !state.isPurchasing && state.subscription?.isPremium != true,
+                onClick = onPurchaseYearly,
+            )
+
+            OutlinedButton(onClick = onRestore, modifier = Modifier.fillMaxWidth()) {
+                Text("Restore purchases")
+            }
+
+            if (state.entitlements?.exportEnabled == true) {
+                Spacer(Modifier.height(8.dp))
+                Text("Premium exports", style = MaterialTheme.typography.titleMedium)
+                Button(onClick = onExportPdf, modifier = Modifier.fillMaxWidth()) {
+                    Text("Export PDF")
+                }
+                Button(onClick = onExportExcel, modifier = Modifier.fillMaxWidth()) {
+                    Text("Export Excel / CSV")
+                }
+            }
+
+            state.successMessage?.let {
+                Text(it, color = MaterialTheme.colorScheme.primary)
+            }
+            state.errorMessage?.let {
+                Text(it, color = MaterialTheme.colorScheme.error)
+            }
+            state.lastExportFile?.let {
+                Text("Saved: ${it.absolutePath}", style = MaterialTheme.typography.bodySmall)
+            }
+        }
+    }
+}
+
+@Composable
+private fun PlanCard(
+    title: String,
+    price: String,
+    subtitle: String,
+    enabled: Boolean,
+    onClick: () -> Unit,
+) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(title, style = MaterialTheme.typography.titleLarge)
+            Text(price, style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.primary)
+            Text(subtitle, style = MaterialTheme.typography.bodyMedium)
+            Button(onClick = onClick, enabled = enabled, modifier = Modifier.fillMaxWidth()) {
+                Text("Subscribe")
+            }
+        }
+    }
+}

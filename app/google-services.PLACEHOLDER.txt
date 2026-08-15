@@ -1,0 +1,5 @@
+# PLACEHOLDER google-services.json
+# Replace this entire file with the real download from Firebase Console
+# for project id: familyos-dev (or your production project).
+# The JSON below is structurally valid so the Google Services Gradle plugin can parse it,
+# but authentication / FCM will not work until you replace the keys.

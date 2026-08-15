@@ -1,0 +1,2 @@
+-keep class com.familyos.core.data.local.entity.** { *; }
+-keep class com.familyos.core.data.remote.dto.** { *; }

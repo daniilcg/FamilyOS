@@ -1,0 +1,9 @@
+# Example local.properties for FamilyOS
+# Copy to local.properties and fill in real values. Do not commit secrets.
+
+sdk.dir=C\:\\Users\\YOU\\AppData\\Local\\Android\\Sdk
+
+AI_OPENAI_KEY=
+AI_GEMINI_KEY=
+AI_OPENROUTER_KEY=
+GOOGLE_WEB_CLIENT_ID=

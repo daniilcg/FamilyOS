@@ -1,0 +1,103 @@
+rules_version = '2';
+
+/**
+ * FamilyOS Firebase Storage Security Rules
+ *
+ * Paths:
+ * - documents/{familyId}/{userId}/{fileName}
+ * - avatars/{userId}/{fileName}
+ * - attachments/{familyId}/{userId}/{fileName}
+ *
+ * Access requires authenticated membership in the family (except avatars).
+ */
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function uid() {
+      return request.auth.uid;
+    }
+
+    function isImage() {
+      return request.resource != null
+        && request.resource.contentType.matches('image/.*');
+    }
+
+    function isAllowedDocument() {
+      return request.resource != null
+        && (
+          request.resource.contentType == 'application/pdf'
+          || request.resource.contentType == 'application/msword'
+          || request.resource.contentType == 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+          || request.resource.contentType.matches('image/jpeg')
+          || request.resource.contentType.matches('image/png')
+          || request.resource.contentType.matches('image/webp')
+          || request.resource.contentType.matches('audio/.*')
+        );
+    }
+
+    function underMaxSize(maxBytes) {
+      return request.resource != null && request.resource.size < maxBytes;
+    }
+
+    function isFamilyMember(familyId) {
+      return isSignedIn()
+        && firestore.exists(/databases/(default)/documents/families/$(familyId)/members/$(uid()));
+    }
+
+    function memberRole(familyId) {
+      return firestore.get(/databases/(default)/documents/families/$(familyId)/members/$(uid())).data.role;
+    }
+
+    function isFullMember(familyId) {
+      return isFamilyMember(familyId)
+        && (
+          memberRole(familyId) == 'OWNER'
+          || memberRole(familyId) == 'ADMIN'
+          || memberRole(familyId) == 'MEMBER'
+        );
+    }
+
+    function isAdmin(familyId) {
+      return isFamilyMember(familyId)
+        && (memberRole(familyId) == 'OWNER' || memberRole(familyId) == 'ADMIN');
+    }
+
+    // Encrypted family documents (PDF/DOCX/images)
+    match /documents/{familyId}/{userId}/{fileName} {
+      allow read: if isFamilyMember(familyId);
+      allow create: if isFullMember(familyId)
+        && userId == uid()
+        && isAllowedDocument()
+        && underMaxSize(25 * 1024 * 1024);
+      allow update: if isFullMember(familyId) && userId == uid();
+      allow delete: if isAdmin(familyId) || (isFullMember(familyId) && userId == uid());
+    }
+
+    // Chat / note attachments
+    match /attachments/{familyId}/{userId}/{fileName} {
+      allow read: if isFamilyMember(familyId);
+      allow create: if isFullMember(familyId)
+        && userId == uid()
+        && underMaxSize(20 * 1024 * 1024);
+      allow update: if isFullMember(familyId) && userId == uid();
+      allow delete: if isAdmin(familyId) || (isFullMember(familyId) && userId == uid());
+    }
+
+    // User avatars
+    match /avatars/{userId}/{fileName} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn()
+        && userId == uid()
+        && isImage()
+        && underMaxSize(5 * 1024 * 1024);
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

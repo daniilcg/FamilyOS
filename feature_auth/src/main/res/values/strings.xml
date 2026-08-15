@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Replace with the OAuth 2.0 Web client ID from Firebase / Google Cloud Console. -->
+    <string name="default_web_client_id">REPLACE_WITH_WEB_CLIENT_ID.apps.googleusercontent.com</string>
+    <string name="auth_brand">FamilyOS</string>
+    <string name="auth_login_title">Welcome back</string>
+    <string name="auth_login_subtitle">Sign in to continue organizing your family life.</string>
+    <string name="auth_signup_title">Create account</string>
+    <string name="auth_forgot_title">Reset password</string>
+</resources>
