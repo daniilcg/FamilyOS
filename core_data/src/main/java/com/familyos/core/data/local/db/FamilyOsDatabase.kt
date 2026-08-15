@@ -3,6 +3,7 @@ package com.familyos.core.data.local.db
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import com.familyos.core.data.local.dao.AiHistoryDao
+import com.familyos.core.data.local.dao.AuthCredentialDao
 import com.familyos.core.data.local.dao.BudgetDao
 import com.familyos.core.data.local.dao.ChatDao
 import com.familyos.core.data.local.dao.DocumentDao
@@ -15,6 +16,7 @@ import com.familyos.core.data.local.dao.ShoppingDao
 import com.familyos.core.data.local.dao.TaskDao
 import com.familyos.core.data.local.dao.UserDao
 import com.familyos.core.data.local.entity.AiHistoryEntity
+import com.familyos.core.data.local.entity.AuthCredentialEntity
 import com.familyos.core.data.local.entity.BudgetEntity
 import com.familyos.core.data.local.entity.ChatMessageEntity
 import com.familyos.core.data.local.entity.ChatThreadEntity
@@ -37,6 +39,7 @@ import com.familyos.core.data.local.entity.UserEntity
 @Database(
     entities = [
         UserEntity::class,
+        AuthCredentialEntity::class,
         FamilyEntity::class,
         MemberEntity::class,
         ShoppingEntity::class,
@@ -53,11 +56,12 @@ import com.familyos.core.data.local.entity.UserEntity
         AiHistoryEntity::class,
         PendingSyncEntity::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = false,
 )
 abstract class FamilyOsDatabase : RoomDatabase() {
     abstract fun userDao(): UserDao
+    abstract fun authCredentialDao(): AuthCredentialDao
     abstract fun familyDao(): FamilyDao
     abstract fun shoppingDao(): ShoppingDao
     abstract fun taskDao(): TaskDao

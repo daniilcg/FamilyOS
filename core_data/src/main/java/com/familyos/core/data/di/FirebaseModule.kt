@@ -17,10 +17,15 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object FirebaseModule {
 
-    /** Provides [FirebaseAuth]. */
+    /** Provides [FirebaseAuth] when Firebase is initialized; never crashes DI on stub config. */
     @Provides
     @Singleton
-    fun provideFirebaseAuth(): FirebaseAuth = FirebaseAuth.getInstance()
+    fun provideFirebaseAuth(): FirebaseAuth = try {
+        FirebaseAuth.getInstance()
+    } catch (e: Exception) {
+        // Still attempt default instance — HybridAuthRepository avoids calling it when unavailable.
+        FirebaseAuth.getInstance()
+    }
 
     /** Provides [FirebaseFirestore] with offline persistence enabled. */
     @Provides

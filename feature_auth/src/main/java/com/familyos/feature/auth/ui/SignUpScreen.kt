@@ -88,10 +88,15 @@ fun SignUpScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 24.dp)
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.Top,
         ) {
+            FirebaseSetupBanner(visible = state.isLocalAuthMode)
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp),
+            ) {
             Spacer(modifier = Modifier.height(12.dp))
             Text(
                 text = "Join FamilyOS",
@@ -192,6 +197,8 @@ fun SignUpScreen(
                 enabled = !state.isLoading,
             ) {
                 Text("Already have an account? Sign in")
+            }
+            Spacer(modifier = Modifier.height(24.dp))
             }
         }
     }

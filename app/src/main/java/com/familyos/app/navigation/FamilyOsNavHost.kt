@@ -49,6 +49,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.familyos.app.permissions.RequestCorePermissionsOnStart
 import com.familyos.app.ui.MainViewModel
 import com.familyos.feature.ai.navigation.AiRoutes
 import com.familyos.feature.ai.navigation.aiGraph
@@ -107,6 +108,8 @@ fun FamilyOsNavHost(
     val navController = rememberNavController()
     val user by mainViewModel.currentUser.collectAsStateWithLifecycle()
     val startDestination = if (user == null) AuthRoutes.GRAPH else HomeRoutes.HOME
+
+    RequestCorePermissionsOnStart(enabled = user != null)
 
     LaunchedEffect(user?.id) {
         if (user == null) {

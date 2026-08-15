@@ -1,5 +1,6 @@
 package com.familyos.core.data.repository
 
+import com.familyos.core.data.auth.FirebaseAuthErrorMapper
 import com.familyos.core.data.local.dao.UserDao
 import com.familyos.core.data.mapper.EntityMappers
 import com.familyos.core.data.mapper.EntityMappers.toDomain
@@ -81,14 +82,14 @@ class AuthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun signInWithEmail(email: String, password: String): Result<User> =
-        Result.runCatching {
+        authCatching {
             val result = auth.signInWithEmailAndPassword(email, password).await()
             val firebaseUser = result.user ?: throw AppException(AppError.Unauthorized("Sign-in failed"))
             persistFirebaseUser(firebaseUser.uid, email, firebaseUser.displayName.orEmpty(), firebaseUser.photoUrl?.toString(), firebaseUser.isEmailVerified)
         }
 
     override suspend fun signInWithGoogle(idToken: String): Result<User> =
-        Result.runCatching {
+        authCatching {
             val credential = GoogleAuthProvider.getCredential(idToken, null)
             val result = auth.signInWithCredential(credential).await()
             val firebaseUser = result.user ?: throw AppException(AppError.Unauthorized("Google sign-in failed"))
@@ -102,7 +103,7 @@ class AuthRepositoryImpl @Inject constructor(
         }
 
     override suspend fun signUpWithEmail(email: String, password: String, displayName: String): Result<User> =
-        Result.runCatching {
+        authCatching {
             val result = auth.createUserWithEmailAndPassword(email, password).await()
             val firebaseUser = result.user ?: throw AppException(AppError.Remote("Account creation failed"))
             val profile = UserProfileChangeRequest.Builder().setDisplayName(displayName).build()
@@ -111,9 +112,27 @@ class AuthRepositoryImpl @Inject constructor(
         }
 
     override suspend fun resetPassword(email: String): Result<Unit> =
-        Result.runCatching {
+        authCatching {
             auth.sendPasswordResetEmail(email).await()
         }
+
+    override suspend fun changePassword(email: String, newPassword: String): Result<Unit> =
+        Result.failure(
+            AppError.Validation(
+                "Смена пароля в Firebase выполняется через письмо сброса",
+            ),
+        )
+
+    private inline fun <T> authCatching(block: () -> T): Result<T> = try {
+        Result.Success(block())
+    } catch (e: kotlinx.coroutines.CancellationException) {
+        throw e
+    } catch (e: AppException) {
+        Result.Error(e.error)
+    } catch (e: Throwable) {
+        val mapped = FirebaseAuthErrorMapper.toAppException(e)
+        Result.Error(mapped.error)
+    }
 
     override suspend fun logout(): Result<Unit> =
         Result.runCatching {

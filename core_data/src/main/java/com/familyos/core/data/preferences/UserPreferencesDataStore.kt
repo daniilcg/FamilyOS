@@ -54,6 +54,7 @@ class UserPreferencesDataStore @Inject constructor(
             } ?: ThemeMode.SYSTEM,
             rememberMe = prefs[KEY_REMEMBER_ME] ?: true,
             activeFamilyId = prefs[KEY_FAMILY_ID],
+            activeSessionUserId = prefs[KEY_SESSION_USER_ID],
             biometricEnabled = prefs[KEY_BIOMETRIC] ?: false,
             languageTag = prefs[KEY_LANGUAGE] ?: Constants.DEFAULT_LANGUAGE,
             currencyCode = prefs[KEY_CURRENCY] ?: Constants.DEFAULT_CURRENCY,
@@ -77,6 +78,13 @@ class UserPreferencesDataStore @Inject constructor(
     suspend fun setActiveFamilyId(familyId: String?) {
         dataStore.edit { prefs ->
             if (familyId == null) prefs.remove(KEY_FAMILY_ID) else prefs[KEY_FAMILY_ID] = familyId
+        }
+    }
+
+    suspend fun setActiveSessionUserId(userId: String?) {
+        dataStore.edit { prefs ->
+            if (userId == null) prefs.remove(KEY_SESSION_USER_ID)
+            else prefs[KEY_SESSION_USER_ID] = userId
         }
     }
 
@@ -124,6 +132,8 @@ class UserPreferencesDataStore @Inject constructor(
             prefs[KEY_REMEMBER_ME] = preferences.rememberMe
             if (preferences.activeFamilyId == null) prefs.remove(KEY_FAMILY_ID)
             else prefs[KEY_FAMILY_ID] = preferences.activeFamilyId!!
+            if (preferences.activeSessionUserId == null) prefs.remove(KEY_SESSION_USER_ID)
+            else prefs[KEY_SESSION_USER_ID] = preferences.activeSessionUserId!!
             prefs[KEY_BIOMETRIC] = preferences.biometricEnabled
             prefs[KEY_LANGUAGE] = preferences.languageTag
             prefs[KEY_CURRENCY] = preferences.currencyCode
@@ -137,6 +147,7 @@ class UserPreferencesDataStore @Inject constructor(
         private val KEY_THEME = stringPreferencesKey("theme_mode")
         private val KEY_REMEMBER_ME = booleanPreferencesKey("remember_me")
         private val KEY_FAMILY_ID = stringPreferencesKey("active_family_id")
+        private val KEY_SESSION_USER_ID = stringPreferencesKey("active_session_user_id")
         private val KEY_BIOMETRIC = booleanPreferencesKey("biometric_enabled")
         private val KEY_LANGUAGE = stringPreferencesKey("language_tag")
         private val KEY_CURRENCY = stringPreferencesKey("currency_code")

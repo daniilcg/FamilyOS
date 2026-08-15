@@ -6,10 +6,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Email
+import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -29,6 +32,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -36,7 +40,7 @@ import com.familyos.feature.auth.AuthEvent
 import com.familyos.feature.auth.AuthViewModel
 
 /**
- * Password reset screen that sends a Firebase reset email.
+ * Password reset screen — email link in cloud mode, new password fields in local mode.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -46,11 +50,14 @@ fun ForgotPasswordScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
+    val isLocal = state.isLocalAuthMode
 
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
             if (event is AuthEvent.PasswordResetSent) {
-                snackbar.showSnackbar("Password reset email sent")
+                snackbar.showSnackbar(
+                    if (isLocal) "Пароль обновлён" else "Письмо для сброса отправлено",
+                )
             }
         }
     }
@@ -69,7 +76,7 @@ fun ForgotPasswordScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Reset password") },
+                title = { Text(if (isLocal) "Новый пароль" else "Сброс пароля") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
@@ -83,11 +90,16 @@ fun ForgotPasswordScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 24.dp),
+                .padding(horizontal = 24.dp)
+                .verticalScroll(rememberScrollState()),
         ) {
             Spacer(modifier = Modifier.height(12.dp))
             Text(
-                text = "Enter the email associated with your account and we will send a reset link.",
+                text = if (isLocal) {
+                    "Введите email аккаунта и новый пароль. Данные хранятся только на этом устройстве."
+                } else {
+                    "Введите email — мы отправим ссылку для сброса пароля."
+                },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
             )
@@ -101,10 +113,42 @@ fun ForgotPasswordScreen(
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Email,
-                    imeAction = ImeAction.Done,
+                    imeAction = if (isLocal) ImeAction.Next else ImeAction.Done,
                 ),
                 enabled = !state.isLoading,
             )
+            if (isLocal) {
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedTextField(
+                    value = state.password,
+                    onValueChange = viewModel::onPasswordChange,
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Новый пароль") },
+                    leadingIcon = { Icon(Icons.Outlined.Lock, contentDescription = null) },
+                    visualTransformation = PasswordVisualTransformation(),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Password,
+                        imeAction = ImeAction.Next,
+                    ),
+                    enabled = !state.isLoading,
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedTextField(
+                    value = state.confirmPassword,
+                    onValueChange = viewModel::onConfirmPasswordChange,
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Подтвердите пароль") },
+                    leadingIcon = { Icon(Icons.Outlined.Lock, contentDescription = null) },
+                    visualTransformation = PasswordVisualTransformation(),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Password,
+                        imeAction = ImeAction.Done,
+                    ),
+                    enabled = !state.isLoading,
+                )
+            }
             Spacer(modifier = Modifier.height(20.dp))
             Button(
                 onClick = viewModel::sendPasswordReset,
@@ -120,7 +164,7 @@ fun ForgotPasswordScreen(
                         color = MaterialTheme.colorScheme.onPrimary,
                     )
                 } else {
-                    Text("Send reset link")
+                    Text(if (isLocal) "Сохранить пароль" else "Отправить ссылку")
                 }
             }
         }

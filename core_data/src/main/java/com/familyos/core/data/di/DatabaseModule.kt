@@ -3,6 +3,7 @@ package com.familyos.core.data.di
 import android.content.Context
 import androidx.room.Room
 import com.familyos.core.data.local.dao.AiHistoryDao
+import com.familyos.core.data.local.dao.AuthCredentialDao
 import com.familyos.core.data.local.dao.BudgetDao
 import com.familyos.core.data.local.dao.ChatDao
 import com.familyos.core.data.local.dao.DocumentDao
@@ -38,6 +39,7 @@ object DatabaseModule {
             .build()
 
     @Provides fun provideUserDao(db: FamilyOsDatabase): UserDao = db.userDao()
+    @Provides fun provideAuthCredentialDao(db: FamilyOsDatabase): AuthCredentialDao = db.authCredentialDao()
     @Provides fun provideFamilyDao(db: FamilyOsDatabase): FamilyDao = db.familyDao()
     @Provides fun provideShoppingDao(db: FamilyOsDatabase): ShoppingDao = db.shoppingDao()
     @Provides fun provideTaskDao(db: FamilyOsDatabase): TaskDao = db.taskDao()

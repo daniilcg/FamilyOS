@@ -14,6 +14,7 @@ interface UserPreferencesRepository {
     suspend fun setThemeMode(mode: ThemeMode): Result<Unit>
     suspend fun setRememberMe(enabled: Boolean): Result<Unit>
     suspend fun setActiveFamilyId(familyId: String?): Result<Unit>
+    suspend fun setActiveSessionUserId(userId: String?): Result<Unit>
     suspend fun setBiometricEnabled(enabled: Boolean): Result<Unit>
     suspend fun setLanguage(tag: String): Result<Unit>
     suspend fun setCurrency(code: String): Result<Unit>

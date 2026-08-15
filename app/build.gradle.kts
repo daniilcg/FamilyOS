@@ -8,6 +8,8 @@ plugins {
     alias(libs.plugins.google.services)
 }
 
+import java.util.Properties
+
 android {
     namespace = "com.familyos.app"
     compileSdk = FamilyOsBuild.COMPILE_SDK
@@ -20,6 +22,32 @@ android {
         versionName = FamilyOsBuild.VERSION_NAME
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
+
+        val localProps = Properties().apply {
+            val f = rootProject.file("local.properties")
+            if (f.exists()) {
+                f.inputStream().use { stream -> load(stream) }
+            }
+        }
+        val googleServicesText = runCatching { file("google-services.json").readText() }.getOrDefault("")
+        val webClientFromJson = Regex("\"client_id\"\\s*:\\s*\"([^\"]+\\.apps\\.googleusercontent\\.com)\"")
+            .findAll(googleServicesText)
+            .map { it.groupValues[1] }
+            .firstOrNull { !it.contains("000000000000") && !it.contains("Placeholder", ignoreCase = true) }
+            .orEmpty()
+        val fromLocal = localProps.getProperty("GOOGLE_WEB_CLIENT_ID").orEmpty()
+        val webClientId = when {
+            fromLocal.isNotBlank() -> fromLocal
+            webClientFromJson.isNotBlank() -> webClientFromJson
+            else -> ""
+        }
+        // Do not resValue default_web_client_id — google-services plugin already generates it.
+        buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"${webClientId.replace("\"", "\\\"")}\"")
+
+        val firebaseConfigured = googleServicesText.isNotBlank() &&
+            !googleServicesText.contains("AIzaSyPlaceholder") &&
+            !googleServicesText.contains("\"project_number\": \"000000000000\"")
+        buildConfigField("boolean", "FIREBASE_CONFIGURED", firebaseConfigured.toString())
     }
 
     buildTypes {

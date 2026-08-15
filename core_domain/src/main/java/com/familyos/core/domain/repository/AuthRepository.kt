@@ -23,8 +23,14 @@ interface AuthRepository {
     /** Creates an account with email/password and profile name. */
     suspend fun signUpWithEmail(email: String, password: String, displayName: String): Result<User>
 
-    /** Sends a password reset email. */
+    /** Sends a password reset email (cloud) or confirms the email exists (local). */
     suspend fun resetPassword(email: String): Result<Unit>
+
+    /**
+     * Sets a new password for [email]. Used by local offline auth reset flow.
+     * Cloud mode should use [resetPassword] instead.
+     */
+    suspend fun changePassword(email: String, newPassword: String): Result<Unit>
 
     /** Signs the current user out. */
     suspend fun logout(): Result<Unit>

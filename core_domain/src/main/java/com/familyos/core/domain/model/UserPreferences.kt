@@ -10,6 +10,8 @@ data class UserPreferences(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val rememberMe: Boolean = true,
     val activeFamilyId: String? = null,
+    /** Persisted local-auth session user id for remember-me / auto-login. */
+    val activeSessionUserId: String? = null,
     val biometricEnabled: Boolean = false,
     val languageTag: String = "en",
     val currencyCode: String = "EUR",

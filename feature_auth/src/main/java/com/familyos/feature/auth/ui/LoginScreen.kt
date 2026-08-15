@@ -72,6 +72,7 @@ fun LoginScreen(
     val scope = rememberCoroutineScope()
     val focusManager = LocalFocusManager.current
     var passwordVisible by remember { mutableStateOf(false) }
+    val firebaseMisconfigured = remember { googleSignInHelper.isMisconfigured() }
 
     val googleLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult(),
@@ -108,10 +109,17 @@ fun LoginScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 24.dp)
                 .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.Center,
+            verticalArrangement = Arrangement.Top,
         ) {
+            FirebaseSetupBanner(visible = state.isLocalAuthMode)
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp),
+                verticalArrangement = Arrangement.Center,
+            ) {
+            Spacer(modifier = Modifier.height(24.dp))
             Text(
                 text = "FamilyOS",
                 style = MaterialTheme.typography.headlineLarge,
@@ -224,15 +232,19 @@ fun LoginScreen(
                     Text("Sign in")
                 }
             }
-            Spacer(modifier = Modifier.height(12.dp))
-            OutlinedButton(
-                onClick = { googleLauncher.launch(googleSignInHelper.getSignInIntent()) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp),
-                enabled = !state.isLoading,
-            ) {
-                Text("Continue with Google")
+            if (!firebaseMisconfigured) {
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedButton(
+                    onClick = {
+                        googleLauncher.launch(googleSignInHelper.getSignInIntent())
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
+                    enabled = !state.isLoading,
+                ) {
+                    Text("Continue with Google")
+                }
             }
             Spacer(modifier = Modifier.height(24.dp))
             TextButton(
@@ -241,6 +253,8 @@ fun LoginScreen(
                 enabled = !state.isLoading,
             ) {
                 Text("Need an account? Sign up")
+            }
+            Spacer(modifier = Modifier.height(24.dp))
             }
         }
     }

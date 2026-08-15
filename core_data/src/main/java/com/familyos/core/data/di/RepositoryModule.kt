@@ -1,12 +1,13 @@
 package com.familyos.core.data.di
 
+import com.familyos.core.data.auth.FirebaseAvailability
 import com.familyos.core.data.repository.AiRepositoryImpl
-import com.familyos.core.data.repository.AuthRepositoryImpl
 import com.familyos.core.data.repository.BudgetRepositoryImpl
 import com.familyos.core.data.repository.CalendarRepositoryImpl
 import com.familyos.core.data.repository.ChatRepositoryImpl
 import com.familyos.core.data.repository.DocumentRepositoryImpl
 import com.familyos.core.data.repository.FamilyRepositoryImpl
+import com.familyos.core.data.repository.HybridAuthRepository
 import com.familyos.core.data.repository.NoteRepositoryImpl
 import com.familyos.core.data.repository.NotificationRepositoryImpl
 import com.familyos.core.data.repository.ShoppingRepositoryImpl
@@ -14,6 +15,7 @@ import com.familyos.core.data.repository.TaskRepositoryImpl
 import com.familyos.core.data.repository.UserPreferencesRepositoryImpl
 import com.familyos.core.data.sync.SyncQueueRepositoryImpl
 import com.familyos.core.domain.repository.AiRepository
+import com.familyos.core.domain.repository.AuthModeProvider
 import com.familyos.core.domain.repository.AuthRepository
 import com.familyos.core.domain.repository.BudgetRepository
 import com.familyos.core.domain.repository.CalendarRepository
@@ -40,7 +42,8 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 abstract class RepositoryModule {
 
-    @Binds @Singleton abstract fun bindAuthRepository(impl: AuthRepositoryImpl): AuthRepository
+    @Binds @Singleton abstract fun bindAuthRepository(impl: HybridAuthRepository): AuthRepository
+    @Binds @Singleton abstract fun bindAuthModeProvider(impl: FirebaseAvailability): AuthModeProvider
     @Binds @Singleton abstract fun bindFamilyRepository(impl: FamilyRepositoryImpl): FamilyRepository
     @Binds @Singleton abstract fun bindShoppingRepository(impl: ShoppingRepositoryImpl): ShoppingRepository
     @Binds @Singleton abstract fun bindTaskRepository(impl: TaskRepositoryImpl): TaskRepository

@@ -29,6 +29,9 @@ class UserPreferencesRepositoryImpl @Inject constructor(
     override suspend fun setActiveFamilyId(familyId: String?): Result<Unit> =
         Result.runCatching { dataStore.setActiveFamilyId(familyId) }
 
+    override suspend fun setActiveSessionUserId(userId: String?): Result<Unit> =
+        Result.runCatching { dataStore.setActiveSessionUserId(userId) }
+
     override suspend fun setBiometricEnabled(enabled: Boolean): Result<Unit> =
         Result.runCatching { dataStore.setBiometricEnabled(enabled) }
 

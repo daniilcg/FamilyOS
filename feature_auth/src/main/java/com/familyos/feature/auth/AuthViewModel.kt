@@ -3,7 +3,9 @@ package com.familyos.feature.auth
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.familyos.core.domain.model.User
+import com.familyos.core.domain.repository.AuthModeProvider
 import com.familyos.core.domain.repository.UserPreferencesRepository
+import com.familyos.core.domain.usecase.auth.ChangePasswordUseCase
 import com.familyos.core.domain.usecase.auth.ObserveAuthStateUseCase
 import com.familyos.core.domain.usecase.auth.ResetPasswordUseCase
 import com.familyos.core.domain.usecase.auth.SignInEmailUseCase
@@ -39,6 +41,7 @@ data class AuthUiState(
     val isSignedIn: Boolean = false,
     val currentUser: User? = null,
     val autoLoginChecked: Boolean = false,
+    val isLocalAuthMode: Boolean = true,
 )
 
 /**
@@ -59,11 +62,15 @@ class AuthViewModel @Inject constructor(
     private val signInGoogle: SignInGoogleUseCase,
     private val signUpEmail: SignUpEmailUseCase,
     private val resetPassword: ResetPasswordUseCase,
+    private val changePassword: ChangePasswordUseCase,
     private val observeAuthState: ObserveAuthStateUseCase,
     private val userPreferencesRepository: UserPreferencesRepository,
+    authModeProvider: AuthModeProvider,
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(AuthUiState())
+    private val _uiState = MutableStateFlow(
+        AuthUiState(isLocalAuthMode = authModeProvider.isLocalAuthMode()),
+    )
     val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
 
     private val _events = MutableSharedFlow<AuthEvent>(extraBufferCapacity = 1)
@@ -169,7 +176,7 @@ class AuthViewModel @Inject constructor(
     fun signUp() {
         val state = _uiState.value
         if (state.password != state.confirmPassword) {
-            _uiState.update { it.copy(errorMessage = "Passwords do not match") }
+            _uiState.update { it.copy(errorMessage = "Пароли не совпадают") }
             return
         }
         viewModelScope.launch {
@@ -197,24 +204,54 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-    /** Sends a password-reset email. */
+    /**
+     * Cloud: sends a password-reset email.
+     * Local: validates new password confirmation and updates the stored hash.
+     */
     fun sendPasswordReset() {
-        val email = _uiState.value.email
+        val state = _uiState.value
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null, infoMessage = null) }
-            when (val result = resetPassword(email)) {
-                is Result.Success -> {
+            if (state.isLocalAuthMode) {
+                if (state.password != state.confirmPassword) {
                     _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            infoMessage = "Password reset email sent. Check your inbox.",
-                        )
+                        it.copy(isLoading = false, errorMessage = "Пароли не совпадают")
                     }
-                    _events.emit(AuthEvent.PasswordResetSent)
+                    return@launch
                 }
-                is Result.Error -> {
-                    _uiState.update {
-                        it.copy(isLoading = false, errorMessage = result.error.message)
+                when (val result = changePassword(state.email, state.password)) {
+                    is Result.Success -> {
+                        _uiState.update {
+                            it.copy(
+                                isLoading = false,
+                                infoMessage = "Пароль обновлён. Войдите с новым паролем.",
+                                password = "",
+                                confirmPassword = "",
+                            )
+                        }
+                        _events.emit(AuthEvent.PasswordResetSent)
+                    }
+                    is Result.Error -> {
+                        _uiState.update {
+                            it.copy(isLoading = false, errorMessage = result.error.message)
+                        }
+                    }
+                }
+            } else {
+                when (val result = resetPassword(state.email)) {
+                    is Result.Success -> {
+                        _uiState.update {
+                            it.copy(
+                                isLoading = false,
+                                infoMessage = "Письмо для сброса пароля отправлено. Проверьте почту.",
+                            )
+                        }
+                        _events.emit(AuthEvent.PasswordResetSent)
+                    }
+                    is Result.Error -> {
+                        _uiState.update {
+                            it.copy(isLoading = false, errorMessage = result.error.message)
+                        }
                     }
                 }
             }
@@ -222,7 +259,7 @@ class AuthViewModel @Inject constructor(
     }
 
     /**
-     * Observes Firebase auth state for auto-login when remember-me is enabled.
+     * Observes auth state for auto-login when remember-me is enabled.
      */
     private fun observeSession() {
         viewModelScope.launch {
