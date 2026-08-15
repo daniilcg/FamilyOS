@@ -42,6 +42,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -49,6 +50,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.familyos.app.R
 import com.familyos.app.permissions.RequestCorePermissionsOnStart
 import com.familyos.app.ui.MainViewModel
 import com.familyos.feature.ai.navigation.AiRoutes
@@ -123,11 +125,11 @@ fun FamilyOsNavHost(
     }
 
     val bottomItems = listOf(
-        BottomDest(HomeRoutes.HOME, "Home", Icons.Outlined.Home),
-        BottomDest(ShoppingRoutes.GRAPH, "Shopping", Icons.Outlined.ShoppingCart),
-        BottomDest(TaskRoutes.GRAPH, "Tasks", Icons.Outlined.TaskAlt),
-        BottomDest(CalendarRoutes.GRAPH, "Calendar", Icons.Outlined.CalendarMonth),
-        BottomDest(AppRoutes.MORE, "More", Icons.Outlined.MoreHoriz),
+        BottomDest(HomeRoutes.HOME, stringResource(R.string.nav_home), Icons.Outlined.Home),
+        BottomDest(ShoppingRoutes.GRAPH, stringResource(R.string.nav_shopping), Icons.Outlined.ShoppingCart),
+        BottomDest(TaskRoutes.GRAPH, stringResource(R.string.nav_tasks), Icons.Outlined.TaskAlt),
+        BottomDest(CalendarRoutes.GRAPH, stringResource(R.string.nav_calendar), Icons.Outlined.CalendarMonth),
+        BottomDest(AppRoutes.MORE, stringResource(R.string.nav_more), Icons.Outlined.MoreHoriz),
     )
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -279,7 +281,7 @@ private fun MoreScreen(
     onJoinFamily: () -> Unit,
 ) {
     Scaffold(
-        topBar = { TopAppBar(title = { Text("More") }) },
+        topBar = { TopAppBar(title = { Text(stringResource(R.string.more_title)) }) },
     ) { padding ->
         Column(
             modifier = Modifier
@@ -288,20 +290,20 @@ private fun MoreScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 8.dp),
         ) {
-            MoreRow(Icons.AutoMirrored.Outlined.Note, "Notes", onOpenNotes)
-            MoreRow(Icons.Outlined.Folder, "Documents", onOpenDocuments)
-            MoreRow(Icons.Outlined.Payments, "Budget", onOpenBudget)
-            MoreRow(Icons.AutoMirrored.Outlined.Chat, "Chat", onOpenChat)
-            MoreRow(Icons.Outlined.AutoAwesome, "Family AI", onOpenAi)
-            MoreRow(Icons.Outlined.Notifications, "Notifications", onOpenNotifications)
-            MoreRow(Icons.Outlined.WorkspacePremium, "Premium", onOpenBilling)
+            MoreRow(Icons.AutoMirrored.Outlined.Note, stringResource(R.string.more_notes), onOpenNotes)
+            MoreRow(Icons.Outlined.Folder, stringResource(R.string.more_documents), onOpenDocuments)
+            MoreRow(Icons.Outlined.Payments, stringResource(R.string.more_budget), onOpenBudget)
+            MoreRow(Icons.AutoMirrored.Outlined.Chat, stringResource(R.string.more_chat), onOpenChat)
+            MoreRow(Icons.Outlined.AutoAwesome, stringResource(R.string.more_ai), onOpenAi)
+            MoreRow(Icons.Outlined.Notifications, stringResource(R.string.more_notifications), onOpenNotifications)
+            MoreRow(Icons.Outlined.WorkspacePremium, stringResource(R.string.more_premium), onOpenBilling)
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-            MoreRow(Icons.Outlined.AccountTree, "Family members", onOpenFamily)
-            MoreRow(Icons.Outlined.AccountTree, "Create family", onCreateFamily)
-            MoreRow(Icons.Outlined.AccountTree, "Join family", onJoinFamily)
+            MoreRow(Icons.Outlined.AccountTree, stringResource(R.string.more_family_members), onOpenFamily)
+            MoreRow(Icons.Outlined.AccountTree, stringResource(R.string.more_create_family), onCreateFamily)
+            MoreRow(Icons.Outlined.AccountTree, stringResource(R.string.more_join_family), onJoinFamily)
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-            MoreRow(Icons.Outlined.Person, "Profile", onOpenProfile)
-            MoreRow(Icons.Outlined.Settings, "Settings", onOpenSettings)
+            MoreRow(Icons.Outlined.Person, stringResource(R.string.more_profile), onOpenProfile)
+            MoreRow(Icons.Outlined.Settings, stringResource(R.string.more_settings), onOpenSettings)
             Spacer(modifier = Modifier.height(24.dp))
         }
     }

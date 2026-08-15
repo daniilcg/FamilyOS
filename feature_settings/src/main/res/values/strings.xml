@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_title">Settings</string>
+    <string name="settings_appearance">Appearance</string>
+    <string name="settings_theme_light">Light</string>
+    <string name="settings_theme_dark">Dark</string>
+    <string name="settings_theme_system">System</string>
+    <string name="settings_notifications">Notifications</string>
+    <string name="settings_security">Security</string>
+    <string name="settings_biometric">Biometric lock</string>
+    <string name="settings_biometric_sub">Require fingerprint or face unlock when opening the app</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_ai_provider">AI provider</string>
+    <string name="settings_edit_profile">Edit profile</string>
+    <string name="settings_logout">Log out</string>
+    <string name="settings_back">Back</string>
+</resources>

@@ -29,6 +29,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.familyos.core.domain.model.AiMessage
 import com.familyos.feature.ai.provider.AiProviderId
@@ -36,7 +37,7 @@ import com.familyos.feature.ai.viewmodel.AiUiMessage
 import com.familyos.feature.ai.viewmodel.AiUiState
 
 /**
- * Family AI chat UI with provider switching and apply-action CTA.
+ * Family AI chat UI with provider switching, API key editor, and apply-action CTA.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,6 +46,8 @@ fun AiScreen(
     onDraftChange: (String) -> Unit,
     onSend: () -> Unit,
     onProviderChange: (AiProviderId) -> Unit,
+    onApiKeyChange: (String) -> Unit,
+    onSaveApiKey: () -> Unit,
     onApplyAction: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -73,6 +76,31 @@ fun AiScreen(
                     color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.padding(vertical = 8.dp),
                 )
+            }
+            Text(
+                "${state.providerId.displayName} API key",
+                style = MaterialTheme.typography.titleSmall,
+                modifier = Modifier.padding(top = 8.dp),
+            )
+            OutlinedTextField(
+                value = state.apiKeyDraft,
+                onValueChange = onApiKeyChange,
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("API key") },
+                singleLine = true,
+                visualTransformation = PasswordVisualTransformation(),
+                placeholder = { Text("Paste key for ${state.providerId.displayName}") },
+            )
+            Button(
+                onClick = onSaveApiKey,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 4.dp, bottom = 4.dp),
+            ) {
+                Text("Save API key")
+            }
+            state.keySavedMessage?.let {
+                Text(it, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(4.dp))
             }
             LazyColumn(
                 modifier = Modifier.weight(1f).fillMaxWidth(),

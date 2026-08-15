@@ -78,10 +78,14 @@ Also enable in the same Firebase project:
 Deploy security rules:
 
 ```bash
-firebase deploy --only firestore:rules,storage
+# From project root (requires `firebase login` once)
+firebase deploy --only firestore:rules,storage --project segalfamilyos
 ```
 
+Config: `firebase.json` + `.firebaserc` (project `segalfamilyos`).  
 Rules files: `firestore/firestore.rules`, `firestore/storage.rules`.
+
+If deploy fails with auth errors, run `firebase login` and retry; the JSON/rules files are ready either way.
 
 
 ## Local secrets (`local.properties`)
@@ -118,6 +122,8 @@ In Play Console → Monetize → Subscriptions create:
 | `familyos_premium_yearly` | Subscription | Yearly Premium |
 
 Wire the app with a licensed tester account. The Billing Library 7 client lives in `feature_billing` (`BillingRepositoryImpl`).
+
+Paywall also supports **PayPal direct pay** (`https://www.paypal.me/segalcommic`) plus redeem code `FAMILYOS-SEGAL-PREMIUM` for a 1-year manual Premium grant. PayPal cannot replace Play Billing for Play Store listings; use Play subscriptions for store distribution.
 
 ### Entitlements
 

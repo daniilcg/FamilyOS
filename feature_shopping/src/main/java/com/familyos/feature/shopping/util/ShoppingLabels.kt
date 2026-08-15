@@ -2,6 +2,7 @@ package com.familyos.feature.shopping.util
 
 import com.familyos.core.domain.model.ShoppingCategory
 import com.familyos.core.domain.model.ShoppingStatus
+import com.familyos.core.locale.LocalizedLabels
 import java.text.NumberFormat
 import java.time.Instant
 import java.time.ZoneId
@@ -22,24 +23,10 @@ val ShoppingUiCategories: List<ShoppingCategory> = listOf(
 )
 
 /** Human-readable shopping category label. */
-fun ShoppingCategory.label(): String = when (this) {
-    ShoppingCategory.PRODUCTS -> "Products"
-    ShoppingCategory.HOME -> "Home"
-    ShoppingCategory.PHARMACY -> "Pharmacy"
-    ShoppingCategory.AUTO -> "Auto"
-    ShoppingCategory.PETS -> "Pets"
-    ShoppingCategory.KIDS -> "Kids"
-    ShoppingCategory.CLOTHING -> "Clothing"
-    ShoppingCategory.ELECTRONICS -> "Electronics"
-    ShoppingCategory.OTHER -> "Other"
-}
+fun ShoppingCategory.label(): String = LocalizedLabels.shoppingCategory(name)
 
 /** Human-readable shopping status label. */
-fun ShoppingStatus.label(): String = when (this) {
-    ShoppingStatus.ACTIVE -> "Active"
-    ShoppingStatus.PURCHASED -> "Purchased"
-    ShoppingStatus.ARCHIVED -> "Archived"
-}
+fun ShoppingStatus.label(): String = LocalizedLabels.shoppingStatus(name)
 
 /** Formats a price with currency for display. */
 fun formatPrice(amount: Double?, currency: String): String {
@@ -49,13 +36,11 @@ fun formatPrice(amount: Double?, currency: String): String {
     return format.format(amount)
 }
 
-private val dateTimeFormatter: DateTimeFormatter =
-    DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm").withLocale(Locale.getDefault())
-
 /** Formats epoch millis for list captions. */
 fun formatEpoch(millis: Long?): String {
     if (millis == null || millis <= 0L) return "—"
-    return Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).format(dateTimeFormatter)
+    val formatter = DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm").withLocale(Locale.getDefault())
+    return Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).format(formatter)
 }
 
 /** Sort modes for the active shopping list. */
@@ -70,12 +55,4 @@ enum class ShoppingSort {
 }
 
 /** Display label for [ShoppingSort]. */
-fun ShoppingSort.label(): String = when (this) {
-    ShoppingSort.NAME_ASC -> "Name A–Z"
-    ShoppingSort.NAME_DESC -> "Name Z–A"
-    ShoppingSort.NEWEST -> "Newest"
-    ShoppingSort.OLDEST -> "Oldest"
-    ShoppingSort.PRICE_ASC -> "Price ↑"
-    ShoppingSort.PRICE_DESC -> "Price ↓"
-    ShoppingSort.CATEGORY -> "Category"
-}
+fun ShoppingSort.label(): String = LocalizedLabels.shoppingSort(name)

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_title">Podešavanja</string>
+    <string name="settings_appearance">Izgled</string>
+    <string name="settings_theme_light">Svetla</string>
+    <string name="settings_theme_dark">Tamna</string>
+    <string name="settings_theme_system">Sistemska</string>
+    <string name="settings_notifications">Obaveštenja</string>
+    <string name="settings_security">Bezbednost</string>
+    <string name="settings_biometric">Biometrijska zaštita</string>
+    <string name="settings_biometric_sub">Zahtevaj otisak prsta ili Face ID pri otvaranju</string>
+    <string name="settings_language">Jezik</string>
+    <string name="settings_ai_provider">AI provajder</string>
+    <string name="settings_edit_profile">Izmeni profil</string>
+    <string name="settings_logout">Odjavi se</string>
+    <string name="settings_back">Nazad</string>
+</resources>

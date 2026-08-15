@@ -1,6 +1,7 @@
 package com.familyos.feature.budget.util
 
 import com.familyos.core.domain.model.BudgetCategory
+import com.familyos.core.locale.LocalizedLabels
 import java.text.NumberFormat
 import java.time.Instant
 import java.time.ZoneId
@@ -19,16 +20,7 @@ val BudgetExpenseCategories: List<BudgetCategory> = listOf(
     BudgetCategory.OTHER,
 )
 
-fun BudgetCategory.label(): String = when (this) {
-    BudgetCategory.FOOD -> "Food"
-    BudgetCategory.UTILITIES -> "Utilities"
-    BudgetCategory.CAR -> "Car"
-    BudgetCategory.EDUCATION -> "Education"
-    BudgetCategory.HEALTH -> "Health"
-    BudgetCategory.ENTERTAINMENT -> "Entertainment"
-    BudgetCategory.TRAVEL -> "Travel"
-    BudgetCategory.OTHER -> "Other"
-}
+fun BudgetCategory.label(): String = LocalizedLabels.budgetCategory(name)
 
 fun formatMoney(amount: Double, currency: String): String {
     val format = NumberFormat.getCurrencyInstance(Locale.getDefault())
@@ -36,11 +28,12 @@ fun formatMoney(amount: Double, currency: String): String {
     return format.format(amount)
 }
 
-private val monthFormatter = DateTimeFormatter.ofPattern("MMMM yyyy").withLocale(Locale.getDefault())
-private val dayFormatter = DateTimeFormatter.ofPattern("dd MMM yyyy").withLocale(Locale.getDefault())
+fun formatMonth(epochDayStart: Long): String {
+    val monthFormatter = DateTimeFormatter.ofPattern("MMMM yyyy").withLocale(Locale.getDefault())
+    return Instant.ofEpochMilli(epochDayStart).atZone(ZoneId.systemDefault()).format(monthFormatter)
+}
 
-fun formatMonth(epochDayStart: Long): String =
-    Instant.ofEpochMilli(epochDayStart).atZone(ZoneId.systemDefault()).format(monthFormatter)
-
-fun formatDay(epoch: Long): String =
-    Instant.ofEpochMilli(epoch).atZone(ZoneId.systemDefault()).format(dayFormatter)
+fun formatDay(epoch: Long): String {
+    val dayFormatter = DateTimeFormatter.ofPattern("dd MMM yyyy").withLocale(Locale.getDefault())
+    return Instant.ofEpochMilli(epoch).atZone(ZoneId.systemDefault()).format(dayFormatter)
+}

@@ -5,13 +5,16 @@ import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
 import com.familyos.app.notifications.NotificationHelper
 import com.familyos.app.workers.FamilyOsWorkScheduler
+import com.familyos.core.domain.repository.UserPreferencesRepository
+import com.familyos.core.locale.AppLocale
 import dagger.hilt.android.HiltAndroidApp
+import kotlinx.coroutines.runBlocking
 import timber.log.Timber
 import javax.inject.Inject
 
 /**
  * FamilyOS application entry point. Configures Timber, notification channels,
- * WorkManager with Hilt, and periodic background jobs.
+ * WorkManager with Hilt, locale, and periodic background jobs.
  */
 @HiltAndroidApp
 class FamilyOsApplication : Application(), Configuration.Provider {
@@ -25,6 +28,9 @@ class FamilyOsApplication : Application(), Configuration.Provider {
     @Inject
     lateinit var workScheduler: FamilyOsWorkScheduler
 
+    @Inject
+    lateinit var userPreferencesRepository: UserPreferencesRepository
+
     override fun onCreate() {
         super.onCreate()
         if (BuildConfig.DEBUG) {
@@ -32,6 +38,10 @@ class FamilyOsApplication : Application(), Configuration.Provider {
         } else {
             Timber.plant(ReleaseTree())
         }
+        runCatching {
+            val tag = runBlocking { userPreferencesRepository.get().languageTag }
+            AppLocale.apply(AppLocale.normalize(tag))
+        }.onFailure { Timber.w(it, "Failed to apply saved locale") }
         notificationHelper.createChannels()
         workScheduler.scheduleAll()
         Timber.i("FamilyOS application started")
@@ -52,6 +62,5 @@ class FamilyOsApplication : Application(), Configuration.Provider {
 private class ReleaseTree : Timber.Tree() {
     override fun log(priority: Int, tag: String?, message: String, t: Throwable?) {
         if (priority < android.util.Log.INFO) return
-        // Hook crash reporters here in production builds.
     }
 }

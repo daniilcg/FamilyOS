@@ -1,6 +1,9 @@
 package com.familyos.feature.billing.viewmodel
 
 import android.app.Activity
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.familyos.core.domain.model.BillingProducts
@@ -14,10 +17,12 @@ import com.familyos.core.domain.usecase.billing.ObserveSubscriptionUseCase
 import com.familyos.core.domain.usecase.billing.PremiumAccessControl
 import com.familyos.core.domain.usecase.billing.RestorePurchasesUseCase
 import com.familyos.core.domain.util.Result
+import com.familyos.feature.billing.BillingConstants
 import com.familyos.feature.billing.data.BillingRepositoryImpl
 import com.familyos.feature.billing.export.ExportExcelUseCase
 import com.familyos.feature.billing.export.ExportPdfUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -33,6 +38,7 @@ data class BillingUiState(
     val products: List<BillingProductDetails> = emptyList(),
     val isLoading: Boolean = true,
     val isPurchasing: Boolean = false,
+    val redeemCode: String = "",
     val errorMessage: String? = null,
     val successMessage: String? = null,
     val lastExportFile: File? = null,
@@ -40,10 +46,11 @@ data class BillingUiState(
 )
 
 /**
- * Billing ViewModel for paywall, restore, entitlements, and premium exports.
+ * Billing ViewModel for paywall, restore, entitlements, PayPal redeem, and premium exports.
  */
 @HiltViewModel
 class BillingViewModel @Inject constructor(
+    @ApplicationContext private val appContext: Context,
     private val observeSubscription: ObserveSubscriptionUseCase,
     private val restorePurchases: RestorePurchasesUseCase,
     private val launchPurchase: LaunchPurchaseUseCase,
@@ -131,6 +138,44 @@ class BillingViewModel @Inject constructor(
                 is Result.Error -> _state.update {
                     it.copy(isLoading = false, errorMessage = result.error.message)
                 }
+            }
+        }
+    }
+
+    /** Opens paypal.me/@segalcommic in the browser. */
+    fun openPayPal() {
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(BillingConstants.PAYPAL_ME_URL)).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        runCatching { appContext.startActivity(intent) }
+            .onFailure {
+                _state.update { s -> s.copy(errorMessage = "Could not open PayPal") }
+            }
+    }
+
+    fun setRedeemCode(code: String) {
+        _state.update { it.copy(redeemCode = code) }
+    }
+
+    /** Activates Premium for 1 year when the PayPal redeem code matches. */
+    fun redeemPayPalCode(code: String = _state.value.redeemCode) {
+        val familyId = _state.value.familyId ?: return
+        val trimmed = code.trim()
+        if (!trimmed.equals(BillingConstants.REDEEM_CODE, ignoreCase = true)) {
+            _state.update { it.copy(errorMessage = "Invalid activation code") }
+            return
+        }
+        viewModelScope.launch {
+            when (val result = billingRepositoryImpl.grantManualPremium(familyId)) {
+                is Result.Success -> _state.update {
+                    it.copy(
+                        subscription = result.data,
+                        redeemCode = "",
+                        successMessage = "Premium activated for 1 year (PayPal)",
+                        errorMessage = null,
+                    )
+                }
+                is Result.Error -> _state.update { it.copy(errorMessage = result.error.message) }
             }
         }
     }

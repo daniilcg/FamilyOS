@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">FamilyOS</string>
+
+    <string name="nav_home">Početna</string>
+    <string name="nav_shopping">Kupovina</string>
+    <string name="nav_tasks">Zadaci</string>
+    <string name="nav_calendar">Kalendar</string>
+    <string name="nav_more">Više</string>
+
+    <string name="more_title">Više</string>
+    <string name="more_notes">Beleške</string>
+    <string name="more_documents">Dokumenti</string>
+    <string name="more_budget">Budžet</string>
+    <string name="more_chat">Ćaskanje</string>
+    <string name="more_ai">Family AI</string>
+    <string name="more_notifications">Obaveštenja</string>
+    <string name="more_premium">Premium</string>
+    <string name="more_family_members">Članovi porodice</string>
+    <string name="more_create_family">Kreiraj porodicu</string>
+    <string name="more_join_family">Pridruži se</string>
+    <string name="more_profile">Profil</string>
+    <string name="more_settings">Podešavanja</string>
+
+    <string name="settings_title">Podešavanja</string>
+    <string name="settings_appearance">Izgled</string>
+    <string name="settings_theme_light">Svetla</string>
+    <string name="settings_theme_dark">Tamna</string>
+    <string name="settings_theme_system">Sistemska</string>
+    <string name="settings_notifications">Obaveštenja</string>
+    <string name="settings_security">Bezbednost</string>
+    <string name="settings_biometric">Biometrijska zaštita</string>
+    <string name="settings_biometric_sub">Zahtevaj otisak prsta ili Face ID pri otvaranju</string>
+    <string name="settings_language">Jezik</string>
+    <string name="settings_ai_provider">AI provajder</string>
+    <string name="settings_edit_profile">Izmeni profil</string>
+    <string name="settings_logout">Odjavi se</string>
+    <string name="settings_language_updated">Jezik je ažuriran</string>
+    <string name="settings_back">Nazad</string>
+
+    <string name="auth_welcome_back">Dobrodošli nazad</string>
+    <string name="auth_sign_in_subtitle">Prijavite se da nastavite da organizujete porodični život.</string>
+    <string name="auth_email">Email</string>
+    <string name="auth_password">Lozinka</string>
+    <string name="auth_remember_me">Zapamti me</string>
+    <string name="auth_forgot_password">Zaboravili ste lozinku?</string>
+    <string name="auth_sign_in">Prijava</string>
+    <string name="auth_continue_google">Nastavi sa Google</string>
+    <string name="auth_need_account">Nemate nalog? Registrujte se</string>
+    <string name="auth_create_account">Kreiraj nalog</string>
+    <string name="auth_join_title">Pridružite se FamilyOS</string>
+    <string name="auth_join_subtitle">Kreirajte nalog da delite zadatke, kupovinu i raspored.</string>
+    <string name="auth_display_name">Ime</string>
+    <string name="auth_confirm_password">Potvrdite lozinku</string>
+    <string name="auth_already_have_account">Već imate nalog? Prijavite se</string>
+    <string name="auth_reset_password">Reset lozinke</string>
+
+    <string name="channel_general_name">Opšte</string>
+    <string name="channel_general_desc">Opšta FamilyOS obaveštenja</string>
+    <string name="channel_tasks_name">Zadaci</string>
+    <string name="channel_tasks_desc">Rokovi i dodele zadataka</string>
+    <string name="channel_family_name">Porodica</string>
+    <string name="channel_family_desc">Pozivnice, ćaskanje i članstvo</string>
+    <string name="channel_sync_name">Sinhronizacija</string>
+    <string name="channel_sync_desc">Status pozadinske sinhronizacije</string>
+</resources>

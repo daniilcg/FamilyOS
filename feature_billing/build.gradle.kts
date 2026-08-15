@@ -56,6 +56,7 @@ dependencies {
     ksp(libs.hilt.compiler)
 
     implementation(libs.billing.ktx)
+    implementation(libs.androidx.datastore)
 
     debugImplementation(libs.androidx.compose.ui.tooling)
 }

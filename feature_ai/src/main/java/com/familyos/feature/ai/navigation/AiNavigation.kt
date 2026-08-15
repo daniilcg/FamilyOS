@@ -28,6 +28,8 @@ private fun AiRoute() {
         onDraftChange = vm::setDraft,
         onSend = vm::send,
         onProviderChange = vm::setProvider,
+        onApiKeyChange = vm::setApiKeyDraft,
+        onSaveApiKey = vm::saveApiKey,
         onApplyAction = vm::applyPendingAction,
     )
 }

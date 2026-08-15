@@ -32,5 +32,6 @@ data class SubscriptionInfo(
     /** True when the family currently has a paid entitlement. */
     val isPremium: Boolean
         get() = plan != SubscriptionPlan.FREE &&
-            (status == SubscriptionStatus.ACTIVE || status == SubscriptionStatus.TRIALING)
+            (status == SubscriptionStatus.ACTIVE || status == SubscriptionStatus.TRIALING) &&
+            (expiresAt == null || expiresAt > System.currentTimeMillis())
 }

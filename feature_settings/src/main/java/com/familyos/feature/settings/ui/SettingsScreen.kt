@@ -35,13 +35,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.familyos.core.domain.model.ThemeMode
+import com.familyos.core.locale.AppLocale
 import com.familyos.core.ui.components.FamilyLoading
 import com.familyos.feature.settings.AiProviderOption
+import com.familyos.feature.settings.R
 import com.familyos.feature.settings.SettingsEvent
 import com.familyos.feature.settings.SettingsViewModel
 
@@ -79,10 +82,13 @@ fun SettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Settings") },
+                title = { Text(stringResource(R.string.settings_title)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            Icons.AutoMirrored.Outlined.ArrowBack,
+                            contentDescription = stringResource(R.string.settings_back),
+                        )
                     }
                 },
             )
@@ -99,7 +105,7 @@ fun SettingsScreen(
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = 20.dp, vertical = 12.dp),
             ) {
-                SectionTitle("Appearance")
+                SectionTitle(stringResource(R.string.settings_appearance))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -111,9 +117,9 @@ fun SettingsScreen(
                             label = {
                                 Text(
                                     when (mode) {
-                                        ThemeMode.LIGHT -> "Light"
-                                        ThemeMode.DARK -> "Dark"
-                                        ThemeMode.SYSTEM -> "System"
+                                        ThemeMode.LIGHT -> stringResource(R.string.settings_theme_light)
+                                        ThemeMode.DARK -> stringResource(R.string.settings_theme_dark)
+                                        ThemeMode.SYSTEM -> stringResource(R.string.settings_theme_system)
                                     },
                                 )
                             },
@@ -125,9 +131,9 @@ fun SettingsScreen(
                 HorizontalDivider()
                 Spacer(modifier = Modifier.height(12.dp))
 
-                SectionTitle("Notifications")
+                SectionTitle(stringResource(R.string.settings_notifications))
                 SettingsSwitchRow(
-                    title = "Enable notifications",
+                    title = stringResource(R.string.settings_notifications),
                     subtitle = "Task reminders, shopping updates, and family alerts",
                     checked = prefs.notificationsEnabled,
                     onCheckedChange = viewModel::setNotificationsEnabled,
@@ -137,10 +143,10 @@ fun SettingsScreen(
                 HorizontalDivider()
                 Spacer(modifier = Modifier.height(12.dp))
 
-                SectionTitle("Security")
+                SectionTitle(stringResource(R.string.settings_security))
                 SettingsSwitchRow(
-                    title = "Biometric lock",
-                    subtitle = "Require fingerprint or face unlock when opening the app",
+                    title = stringResource(R.string.settings_biometric),
+                    subtitle = stringResource(R.string.settings_biometric_sub),
                     checked = prefs.biometricEnabled,
                     onCheckedChange = viewModel::setBiometricEnabled,
                 )
@@ -149,20 +155,14 @@ fun SettingsScreen(
                 HorizontalDivider()
                 Spacer(modifier = Modifier.height(12.dp))
 
-                SectionTitle("Language")
-                val languages = listOf(
-                    "en" to "English",
-                    "de" to "Deutsch",
-                    "fr" to "Français",
-                    "es" to "Español",
-                    "uk" to "Українська",
-                )
-                languages.forEach { (tag, label) ->
+                SectionTitle(stringResource(R.string.settings_language))
+                val selectedLang = AppLocale.normalize(prefs.languageTag)
+                AppLocale.supported.forEach { (tag, label) ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .selectable(
-                                selected = prefs.languageTag == tag,
+                                selected = selectedLang == tag,
                                 onClick = { viewModel.setLanguage(tag) },
                                 role = Role.RadioButton,
                             )
@@ -170,7 +170,7 @@ fun SettingsScreen(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         RadioButton(
-                            selected = prefs.languageTag == tag,
+                            selected = selectedLang == tag,
                             onClick = { viewModel.setLanguage(tag) },
                         )
                         Text(label, modifier = Modifier.padding(start = 8.dp))
@@ -181,7 +181,7 @@ fun SettingsScreen(
                 HorizontalDivider()
                 Spacer(modifier = Modifier.height(12.dp))
 
-                SectionTitle("AI provider")
+                SectionTitle(stringResource(R.string.settings_ai_provider))
                 AiProviderOption.entries.forEach { option ->
                     Row(
                         modifier = Modifier
@@ -210,7 +210,7 @@ fun SettingsScreen(
                     onClick = onOpenProfile,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Text("Edit profile")
+                    Text(stringResource(R.string.settings_edit_profile))
                 }
 
                 TextButton(
@@ -219,7 +219,7 @@ fun SettingsScreen(
                 ) {
                     Icon(Icons.AutoMirrored.Outlined.Logout, contentDescription = null)
                     Spacer(modifier = Modifier.padding(6.dp))
-                    Text("Log out")
+                    Text(stringResource(R.string.settings_logout))
                 }
                 Spacer(modifier = Modifier.height(24.dp))
             }

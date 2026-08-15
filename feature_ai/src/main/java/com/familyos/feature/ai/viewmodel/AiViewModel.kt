@@ -41,11 +41,14 @@ data class AiUiState(
     val messages: List<AiUiMessage> = emptyList(),
     val draft: String = "",
     val providerId: AiProviderId = AiProviderId.OPENAI,
+    val apiKeyDraft: String = "",
+    val hasApiKey: Boolean = false,
     val isSending: Boolean = false,
     val isPremium: Boolean = false,
     val pendingAction: AiDomainAction? = null,
     val errorMessage: String? = null,
     val appliedMessage: String? = null,
+    val keySavedMessage: String? = null,
     val familyId: String? = null,
     val userId: String? = null,
     val conversationId: String? = null,
@@ -112,6 +115,19 @@ class AiViewModel @Inject constructor(
                 }
             }
             history += AiChatMessage("system", FamilyAiPrompts.SYSTEM_CORE)
+            loadApiKey(provider)
+        }
+    }
+
+    private fun loadApiKey(providerId: AiProviderId) {
+        viewModelScope.launch {
+            val key = keyStore.getKey(providerId)
+            _state.update {
+                it.copy(
+                    apiKeyDraft = key,
+                    hasApiKey = key.isNotBlank(),
+                )
+            }
         }
     }
 
@@ -123,6 +139,26 @@ class AiViewModel @Inject constructor(
         viewModelScope.launch {
             preferencesRepository.setAiProvider(providerId.id)
             _state.update { it.copy(providerId = providerId) }
+            loadApiKey(providerId)
+        }
+    }
+
+    fun setApiKeyDraft(value: String) {
+        _state.update { it.copy(apiKeyDraft = value) }
+    }
+
+    fun saveApiKey() {
+        val providerId = _state.value.providerId
+        val value = _state.value.apiKeyDraft.trim()
+        viewModelScope.launch {
+            keyStore.setKey(providerId, value)
+            _state.update {
+                it.copy(
+                    hasApiKey = value.isNotBlank(),
+                    keySavedMessage = if (value.isBlank()) "API key cleared" else "API key saved",
+                    errorMessage = null,
+                )
+            }
         }
     }
 
@@ -220,7 +256,7 @@ class AiViewModel @Inject constructor(
     }
 
     fun clearMessages() {
-        _state.update { it.copy(errorMessage = null, appliedMessage = null) }
+        _state.update { it.copy(errorMessage = null, appliedMessage = null, keySavedMessage = null) }
     }
 
     private fun renderAction(action: AiDomainAction): String = when (action) {

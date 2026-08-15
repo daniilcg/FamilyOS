@@ -16,9 +16,9 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -27,11 +27,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.familyos.core.domain.model.BillingProducts
 import com.familyos.core.ui.components.FamilyLoading
+import com.familyos.feature.billing.BillingConstants
 import com.familyos.feature.billing.viewmodel.BillingUiState
 import com.familyos.feature.billing.viewmodel.BillingViewModel
 
 /**
- * Premium paywall with monthly/yearly plans, restore, and entitlement summary.
+ * Premium paywall with Play Billing, PayPal direct pay + redeem, restore, and exports.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -41,6 +42,9 @@ fun PaywallScreen(
     onPurchaseMonthly: () -> Unit,
     onPurchaseYearly: () -> Unit,
     onRestore: () -> Unit,
+    onOpenPayPal: () -> Unit,
+    onRedeemCodeChange: (String) -> Unit,
+    onRedeemPayPalCode: () -> Unit,
     onExportPdf: () -> Unit,
     onExportExcel: () -> Unit,
     modifier: Modifier = Modifier,
@@ -75,6 +79,12 @@ fun PaywallScreen(
             Text(BillingViewModel.FREE_LIMITS_TEXT)
             Text(BillingViewModel.PREMIUM_LIMITS_TEXT)
 
+            Text(
+                "Google Play subscriptions use Play Billing. PayPal is for direct payment; after paying, enter activation code.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f),
+            )
+
             val monthly = state.products.firstOrNull { it.productId == BillingProducts.PREMIUM_MONTHLY }
             val yearly = state.products.firstOrNull { it.productId == BillingProducts.PREMIUM_YEARLY }
 
@@ -97,8 +107,39 @@ fun PaywallScreen(
                 Text("Restore purchases")
             }
 
+            Spacer(modifier = Modifier.height(4.dp))
+            Text("PayPal (direct)", style = MaterialTheme.typography.titleMedium)
+            OutlinedButton(
+                onClick = onOpenPayPal,
+                modifier = Modifier.fillMaxWidth(),
+                enabled = state.subscription?.isPremium != true,
+            ) {
+                Text("Pay with PayPal (${BillingConstants.PAYPAL_HANDLE})")
+            }
+            OutlinedTextField(
+                value = state.redeemCode,
+                onValueChange = onRedeemCodeChange,
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("Activation code") },
+                placeholder = { Text(BillingConstants.REDEEM_CODE) },
+                singleLine = true,
+                enabled = state.subscription?.isPremium != true,
+            )
+            Text(
+                "After PayPal payment to ${BillingConstants.PAYPAL_HANDLE}, enter code ${BillingConstants.REDEEM_CODE}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f),
+            )
+            Button(
+                onClick = onRedeemPayPalCode,
+                modifier = Modifier.fillMaxWidth(),
+                enabled = state.redeemCode.isNotBlank() && state.subscription?.isPremium != true,
+            ) {
+                Text("Activate Premium")
+            }
+
             if (state.entitlements?.exportEnabled == true) {
-                Spacer(Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(8.dp))
                 Text("Premium exports", style = MaterialTheme.typography.titleMedium)
                 Button(onClick = onExportPdf, modifier = Modifier.fillMaxWidth()) {
                     Text("Export PDF")
@@ -133,7 +174,7 @@ private fun PlanCard(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(title, style = MaterialTheme.typography.titleLarge)
             Text(price, style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.primary)
             Text(subtitle, style = MaterialTheme.typography.bodyMedium)

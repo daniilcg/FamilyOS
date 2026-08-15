@@ -2,6 +2,9 @@ package com.familyos.feature.billing.data
 
 import android.app.Activity
 import android.content.Context
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.preferencesDataStore
 import com.android.billingclient.api.AcknowledgePurchaseParams
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
@@ -21,12 +24,14 @@ import com.familyos.core.domain.repository.BillingProductDetails
 import com.familyos.core.domain.repository.BillingRepository
 import com.familyos.core.domain.util.AppError
 import com.familyos.core.domain.util.Result
+import com.familyos.feature.billing.BillingConstants
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -34,9 +39,13 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.resume
+
+private val Context.billingDataStore by preferencesDataStore("familyos_billing")
 
 /**
  * Google Play Billing Library 7 implementation for FamilyOS Premium subscriptions.
@@ -52,6 +61,8 @@ class BillingRepositoryImpl @Inject constructor(
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val mutex = Mutex()
+    private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
+    private val manualPremiumKey = stringPreferencesKey("manual_premium_map")
 
     private val subscriptionByFamily = MutableStateFlow<Map<String, SubscriptionInfo>>(emptyMap())
     private val productDetails = MutableStateFlow<List<ProductDetails>>(emptyList())
@@ -73,6 +84,7 @@ class BillingRepositoryImpl @Inject constructor(
 
     init {
         startConnection()
+        scope.launch { restoreManualPremiumFromStore() }
     }
 
     /** Registers the foreground activity used to launch billing flows. */
@@ -142,11 +154,50 @@ class BillingRepositoryImpl @Inject constructor(
             status = SubscriptionStatus.ACTIVE,
             productId = productId,
             purchaseToken = purchaseToken,
-            autoRenewing = true,
+            autoRenewing = productId != BillingConstants.PAYPAL_PRODUCT_ID,
             updatedAt = System.currentTimeMillis(),
         )
         subscriptionByFamily.update { it + (familyId to info) }
         return Result.success(info)
+    }
+
+    /**
+     * Grants Premium for [BillingConstants.MANUAL_PREMIUM_DAYS] after PayPal redeem.
+     * Persists in memory and DataStore so entitlement survives process death.
+     */
+    suspend fun grantManualPremium(familyId: String): Result<SubscriptionInfo> {
+        val now = System.currentTimeMillis()
+        val info = SubscriptionInfo(
+            familyId = familyId,
+            plan = SubscriptionPlan.PREMIUM,
+            status = SubscriptionStatus.ACTIVE,
+            productId = BillingConstants.PAYPAL_PRODUCT_ID,
+            purchaseToken = BillingConstants.PAYPAL_TOKEN,
+            expiresAt = now + BillingConstants.MANUAL_PREMIUM_DAYS * 24L * 60L * 60L * 1000L,
+            autoRenewing = false,
+            updatedAt = now,
+        )
+        subscriptionByFamily.update { it + (familyId to info) }
+        persistManualPremiumMap()
+        return Result.success(info)
+    }
+
+    private suspend fun restoreManualPremiumFromStore() {
+        runCatching {
+            val raw = context.billingDataStore.data.first()[manualPremiumKey].orEmpty()
+            if (raw.isBlank()) return
+            val map = json.decodeFromString<Map<String, SubscriptionInfo>>(raw)
+            subscriptionByFamily.update { current -> current + map }
+        }
+    }
+
+    private suspend fun persistManualPremiumMap() {
+        val manual = subscriptionByFamily.value.filterValues {
+            it.productId == BillingConstants.PAYPAL_PRODUCT_ID
+        }
+        context.billingDataStore.edit { prefs ->
+            prefs[manualPremiumKey] = json.encodeToString(manual)
+        }
     }
 
     override suspend fun restorePurchases(familyId: String): Result<SubscriptionInfo> =

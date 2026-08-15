@@ -2,7 +2,10 @@ package com.familyos.feature.chat.ui
 
 import android.Manifest
 import android.media.MediaRecorder
+import android.net.Uri
 import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -10,7 +13,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -21,7 +23,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
@@ -48,8 +49,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import com.familyos.core.domain.model.ChatMessage
 import com.familyos.core.domain.model.MemberPresence
 import com.familyos.core.domain.model.MessageType
@@ -190,7 +193,22 @@ private fun MessageBubble(message: ChatMessage, isMine: Boolean, readCount: Int)
                 .padding(12.dp),
         ) {
             when (message.type) {
-                MessageType.IMAGE -> Text("📷 ${message.body}", color = fg)
+                MessageType.IMAGE -> {
+                    val imageSource = resolveImageSource(message)
+                    if (imageSource != null) {
+                        AsyncImage(
+                            model = imageSource,
+                            contentDescription = "Photo",
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(200.dp)
+                                .clip(RoundedCornerShape(8.dp)),
+                            contentScale = ContentScale.Crop,
+                        )
+                    } else {
+                        Text("📷 ${message.body}", color = fg)
+                    }
+                }
                 MessageType.VOICE -> Text(
                     "🎤 Voice (${(message.durationMs ?: 0) / 1000}s)",
                     color = fg,
@@ -217,6 +235,27 @@ private fun MessageBubble(message: ChatMessage, isMine: Boolean, readCount: Int)
     }
 }
 
+/** Prefer attachmentUrl; fall back to body when it looks like a path/URI. */
+private fun resolveImageSource(message: ChatMessage): Any? {
+    val candidates = listOfNotNull(message.attachmentUrl, message.body)
+    for (raw in candidates) {
+        val value = raw.trim()
+        if (value.isEmpty() || value.equals("Photo", ignoreCase = true)) continue
+        when {
+            value.startsWith("content://") ||
+                value.startsWith("file://") ||
+                value.startsWith("http://") ||
+                value.startsWith("https://") -> return value
+            value.startsWith("/") || value.contains(File.separatorChar) -> {
+                val file = File(value)
+                if (file.exists()) return file
+                return value
+            }
+        }
+    }
+    return null
+}
+
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 private fun ComposerBar(
@@ -231,9 +270,29 @@ private fun ComposerBar(
 ) {
     val context = LocalContext.current
     val micPermission = rememberPermissionState(Manifest.permission.RECORD_AUDIO)
+    val imagePermission = rememberPermissionState(
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            Manifest.permission.READ_MEDIA_IMAGES
+        } else {
+            Manifest.permission.READ_EXTERNAL_STORAGE
+        },
+    )
     var recorder by remember { mutableStateOf<MediaRecorder?>(null) }
     var outputFile by remember { mutableStateOf<File?>(null) }
     var elapsed by remember { mutableLongStateOf(0L) }
+
+    val photoPicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent(),
+    ) { uri: Uri? ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        val dest = File(context.cacheDir, "chat_photo_${System.currentTimeMillis()}.jpg")
+        runCatching {
+            context.contentResolver.openInputStream(uri)?.use { input ->
+                dest.outputStream().use { output -> input.copyTo(output) }
+            } ?: return@rememberLauncherForActivityResult
+            onSendPhoto(dest.absolutePath)
+        }
+    }
 
     LaunchedEffect(isRecording) {
         if (isRecording) {
@@ -261,8 +320,11 @@ private fun ComposerBar(
     ) {
         IconButton(
             onClick = {
-                // Demo photo send using a placeholder path; production wires ActivityResultContracts
-                onSendPhoto("https://familyos.local/chat/photo_${System.currentTimeMillis()}.jpg")
+                if (!imagePermission.status.isGranted) {
+                    imagePermission.launchPermissionRequest()
+                    return@IconButton
+                }
+                photoPicker.launch("image/*")
             },
         ) {
             Icon(Icons.Default.Image, contentDescription = "Send photo")

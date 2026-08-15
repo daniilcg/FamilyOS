@@ -38,13 +38,12 @@ sealed interface SettingsEvent {
 }
 
 /**
- * Supported AI providers selectable in settings.
+ * Supported AI providers selectable in settings (aligned with [com.familyos.feature.ai.provider.AiProviderId]).
  */
 enum class AiProviderOption(val id: String, val label: String) {
     OPENAI("openai", "OpenAI"),
-    ANTHROPIC("anthropic", "Anthropic"),
-    GOOGLE("google", "Google Gemini"),
-    LOCAL("local", "On-device"),
+    GEMINI("gemini", "Google Gemini"),
+    OPENROUTER("openrouter", "OpenRouter"),
 }
 
 /**
@@ -115,11 +114,15 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    /** Updates BCP-47 language tag. */
+    /** Updates BCP-47 language tag and applies it app-wide. */
     fun setLanguage(tag: String) {
         viewModelScope.launch {
-            when (val result = userPreferencesRepository.setLanguage(tag)) {
-                is Result.Success -> _uiState.update { it.copy(infoMessage = "Language updated") }
+            val normalized = com.familyos.core.locale.AppLocale.normalize(tag)
+            when (val result = userPreferencesRepository.setLanguage(normalized)) {
+                is Result.Success -> {
+                    com.familyos.core.locale.AppLocale.apply(normalized)
+                    _uiState.update { it.copy(infoMessage = "Language updated") }
+                }
                 is Result.Error -> _uiState.update { it.copy(errorMessage = result.error.message) }
             }
         }

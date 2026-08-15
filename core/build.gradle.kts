@@ -27,6 +27,7 @@ android {
 
 dependencies {
     implementation(libs.androidx.core.ktx)
+    api(libs.androidx.appcompat)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)

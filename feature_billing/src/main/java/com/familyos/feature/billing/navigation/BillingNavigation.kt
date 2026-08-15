@@ -29,6 +29,9 @@ private fun BillingRoute() {
         onPurchaseMonthly = vm::purchaseMonthly,
         onPurchaseYearly = vm::purchaseYearly,
         onRestore = vm::restore,
+        onOpenPayPal = vm::openPayPal,
+        onRedeemCodeChange = vm::setRedeemCode,
+        onRedeemPayPalCode = { vm.redeemPayPalCode() },
         onExportPdf = { vm.exportPdfReport("Family") },
         onExportExcel = { vm.exportExcelReport("Family") },
     )

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_title">Настройки</string>
+    <string name="settings_appearance">Оформление</string>
+    <string name="settings_theme_light">Светлая</string>
+    <string name="settings_theme_dark">Тёмная</string>
+    <string name="settings_theme_system">Системная</string>
+    <string name="settings_notifications">Уведомления</string>
+    <string name="settings_security">Безопасность</string>
+    <string name="settings_biometric">Биометрическая блокировка</string>
+    <string name="settings_biometric_sub">Требовать отпечаток или Face ID при открытии</string>
+    <string name="settings_language">Язык</string>
+    <string name="settings_ai_provider">AI‑провайдер</string>
+    <string name="settings_edit_profile">Редактировать профиль</string>
+    <string name="settings_logout">Выйти</string>
+    <string name="settings_back">Назад</string>
+</resources>
