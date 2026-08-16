@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_title">Налаштування</string>
+    <string name="settings_appearance">Оформлення</string>
+    <string name="settings_theme_light">Світла</string>
+    <string name="settings_theme_dark">Темна</string>
+    <string name="settings_theme_system">Системна</string>
+    <string name="settings_notifications">Сповіщення</string>
+    <string name="settings_security">Безпека</string>
+    <string name="settings_biometric">Біометричне блокування</string>
+    <string name="settings_biometric_sub">Вимагати відбиток або Face ID при відкритті</string>
+    <string name="settings_language">Мова</string>
+    <string name="settings_ai_provider">AI‑провайдер</string>
+    <string name="settings_edit_profile">Редагувати профіль</string>
+    <string name="settings_logout">Вийти</string>
+    <string name="settings_back">Назад</string>
+</resources>

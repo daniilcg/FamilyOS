@@ -41,6 +41,7 @@ import com.familyos.feature.budget.util.formatDay
 import com.familyos.feature.budget.util.label
 import com.familyos.feature.budget.viewmodel.AddTransactionEvent
 import com.familyos.feature.budget.viewmodel.AddTransactionViewModel
+import com.familyos.core.ui.locale.rememberUiStrings
 
 /**
  * Create or edit an income / expense transaction.
@@ -53,6 +54,7 @@ fun AddTransactionScreen(
     viewModel: AddTransactionViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val s = rememberUiStrings()
     val snackbar = remember { SnackbarHostState() }
     var categoryExpanded by remember { mutableStateOf(false) }
 
@@ -66,10 +68,10 @@ fun AddTransactionScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (state.isEdit) "Edit transaction" else "Add transaction") },
+                title = { Text(if (state.isEdit) s.editTransaction else s.addTransaction) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = s.back)
                     }
                 },
             )
@@ -91,26 +93,26 @@ fun AddTransactionScreen(
                     FilterChip(
                         selected = !state.isIncome,
                         onClick = { viewModel.onIncomeChange(false) },
-                        label = { Text("Expense") },
+                        label = { Text(s.expense) },
                     )
                     FilterChip(
                         selected = state.isIncome,
                         onClick = { viewModel.onIncomeChange(true) },
-                        label = { Text("Income") },
+                        label = { Text(s.income) },
                     )
                 }
                 OutlinedTextField(
                     value = state.title,
                     onValueChange = viewModel::onTitleChange,
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Title") },
+                    label = { Text(s.title) },
                     singleLine = true,
                 )
                 OutlinedTextField(
                     value = state.amount,
                     onValueChange = viewModel::onAmountChange,
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Amount (${state.currency})") },
+                    label = { Text("${s.amount} (${state.currency})") },
                     singleLine = true,
                 )
                 if (!state.isIncome) {
@@ -119,7 +121,7 @@ fun AddTransactionScreen(
                             value = state.category.label(),
                             onValueChange = {},
                             readOnly = true,
-                            label = { Text("Category") },
+                            label = { Text(s.category) },
                             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(categoryExpanded) },
                             modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
                         )
@@ -136,15 +138,15 @@ fun AddTransactionScreen(
                         }
                     }
                 }
-                Text("Date: ${formatDay(state.occurredAt)}")
+                Text("${s.dateLabel}: ${formatDay(state.occurredAt)}")
                 Button(onClick = { viewModel.onOccurredAtChange(System.currentTimeMillis()) }) {
-                    Text("Set to now")
+                    Text(s.setToNow)
                 }
                 OutlinedTextField(
                     value = state.notes,
                     onValueChange = viewModel::onNotesChange,
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Notes") },
+                    label = { Text(s.notes) },
                     minLines = 2,
                 )
                 Button(
@@ -152,7 +154,7 @@ fun AddTransactionScreen(
                     enabled = !state.isSaving,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Text(if (state.isSaving) "Saving…" else "Save")
+                    Text(if (state.isSaving) s.saving else s.save)
                 }
             }
         }

@@ -14,18 +14,20 @@ import com.familyos.core.domain.model.ThemeMode
 import com.familyos.core.domain.model.UserPreferences
 import com.familyos.core.domain.util.Constants
 import dagger.hilt.android.qualifiers.ApplicationContext
+import timber.log.Timber
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
-import javax.inject.Inject
-import javax.inject.Singleton
 
 private val Context.userPrefsDataStore: DataStore<Preferences> by preferencesDataStore(
     name = Constants.PREFS_NAME,
 )
 
 /**
- * DataStore-backed user preferences with encrypted storage for AI key aliases.
+ * DataStore-backed user preferences. Encrypted prefs are used only for API keys
+ * and are never read on the cold-start theme/auth path.
  */
 @Singleton
 class UserPreferencesDataStore @Inject constructor(
@@ -33,20 +35,10 @@ class UserPreferencesDataStore @Inject constructor(
 ) {
     private val dataStore = context.userPrefsDataStore
 
-    private val securePrefs: SharedPreferences by lazy {
-        val masterKey = MasterKey.Builder(context)
-            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-            .build()
-        EncryptedSharedPreferences.create(
-            context,
-            Constants.ENCRYPTED_PREFS_NAME,
-            masterKey,
-            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
-        )
-    }
+    @Volatile
+    private var securePrefs: SharedPreferences? = null
 
-    /** Observes all preference values as a [UserPreferences] model. */
+    /** Observes preference values. Does not touch EncryptedSharedPreferences. */
     val preferencesFlow: Flow<UserPreferences> = dataStore.data.map { prefs ->
         UserPreferences(
             themeMode = prefs[KEY_THEME]?.let {
@@ -59,12 +51,11 @@ class UserPreferencesDataStore @Inject constructor(
             languageTag = prefs[KEY_LANGUAGE] ?: Constants.DEFAULT_LANGUAGE,
             currencyCode = prefs[KEY_CURRENCY] ?: Constants.DEFAULT_CURRENCY,
             aiProvider = prefs[KEY_AI_PROVIDER] ?: "openai",
-            aiApiKeyAlias = securePrefs.getString(SECURE_AI_ALIAS, null),
+            aiApiKeyAlias = prefs[KEY_AI_ALIAS],
             notificationsEnabled = prefs[KEY_NOTIFICATIONS] ?: true,
         )
     }
 
-    /** Returns a snapshot of current preferences. */
     suspend fun get(): UserPreferences = preferencesFlow.first()
 
     suspend fun setThemeMode(mode: ThemeMode) {
@@ -104,23 +95,22 @@ class UserPreferencesDataStore @Inject constructor(
         dataStore.edit { it[KEY_AI_PROVIDER] = provider }
     }
 
-    /**
-     * Stores an encrypted reference/alias for the AI API key (not the raw key in cleartext DataStore).
-     */
     suspend fun setAiApiKeyAlias(alias: String?) {
-        securePrefs.edit().apply {
-            if (alias.isNullOrBlank()) remove(SECURE_AI_ALIAS) else putString(SECURE_AI_ALIAS, alias)
-        }.apply()
+        dataStore.edit { prefs ->
+            if (alias.isNullOrBlank()) prefs.remove(KEY_AI_ALIAS) else prefs[KEY_AI_ALIAS] = alias
+        }
     }
 
-    /** Stores the raw AI API key in encrypted shared preferences under [alias]. */
     fun storeEncryptedApiKey(alias: String, apiKey: String) {
-        securePrefs.edit().putString("$SECURE_AI_KEY_PREFIX$alias", apiKey).apply()
+        runCatching {
+            encryptedPrefs()?.edit()?.putString("$SECURE_AI_KEY_PREFIX$alias", apiKey)?.apply()
+        }.onFailure { Timber.w(it, "Failed to store encrypted API key") }
     }
 
-    /** Reads the raw AI API key for [alias] from encrypted storage. */
     fun readEncryptedApiKey(alias: String): String? =
-        securePrefs.getString("$SECURE_AI_KEY_PREFIX$alias", null)
+        runCatching { encryptedPrefs()?.getString("$SECURE_AI_KEY_PREFIX$alias", null) }
+            .onFailure { Timber.w(it, "Failed to read encrypted API key") }
+            .getOrNull()
 
     suspend fun setNotificationsEnabled(enabled: Boolean) {
         dataStore.edit { it[KEY_NOTIFICATIONS] = enabled }
@@ -143,6 +133,36 @@ class UserPreferencesDataStore @Inject constructor(
         setAiApiKeyAlias(preferences.aiApiKeyAlias)
     }
 
+    private fun encryptedPrefs(): SharedPreferences? {
+        securePrefs?.let { return it }
+        synchronized(this) {
+            securePrefs?.let { return it }
+            val created = runCatching { createEncryptedPrefs() }
+                .recoverCatching {
+                    Timber.w(it, "Encrypted prefs corrupt — recreating")
+                    context.deleteSharedPreferences(Constants.ENCRYPTED_PREFS_NAME)
+                    createEncryptedPrefs()
+                }
+                .onFailure { Timber.e(it, "Encrypted prefs unavailable") }
+                .getOrNull()
+            securePrefs = created
+            return created
+        }
+    }
+
+    private fun createEncryptedPrefs(): SharedPreferences {
+        val masterKey = MasterKey.Builder(context)
+            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+            .build()
+        return EncryptedSharedPreferences.create(
+            context,
+            Constants.ENCRYPTED_PREFS_NAME,
+            masterKey,
+            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
+        )
+    }
+
     companion object {
         private val KEY_THEME = stringPreferencesKey("theme_mode")
         private val KEY_REMEMBER_ME = booleanPreferencesKey("remember_me")
@@ -152,8 +172,8 @@ class UserPreferencesDataStore @Inject constructor(
         private val KEY_LANGUAGE = stringPreferencesKey("language_tag")
         private val KEY_CURRENCY = stringPreferencesKey("currency_code")
         private val KEY_AI_PROVIDER = stringPreferencesKey("ai_provider")
+        private val KEY_AI_ALIAS = stringPreferencesKey("ai_api_key_alias")
         private val KEY_NOTIFICATIONS = booleanPreferencesKey("notifications_enabled")
-        private const val SECURE_AI_ALIAS = "ai_api_key_alias"
         private const val SECURE_AI_KEY_PREFIX = "ai_api_key_"
     }
 }

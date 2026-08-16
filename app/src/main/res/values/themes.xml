@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.FamilyOS" parent="android:Theme.Material.Light.NoActionBar">
-        <item name="android:statusBarColor">@android:color/transparent</item>
-        <item name="android:navigationBarColor">@android:color/transparent</item>
-        <item name="android:windowLightStatusBar">true</item>
-        <item name="android:colorPrimary">@color/family_primary</item>
-        <item name="android:colorAccent">@color/family_secondary</item>
+    <style name="Theme.FamilyOS" parent="Theme.AppCompat.Light.NoActionBar">
+        <item name="android:statusBarColor">@color/family_primary</item>
+        <item name="android:navigationBarColor">@android:color/white</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="colorPrimary">@color/family_primary</item>
+        <item name="colorAccent">@color/family_secondary</item>
         <item name="android:windowBackground">@color/family_background</item>
     </style>
 </resources>

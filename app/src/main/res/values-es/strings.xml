@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">FamilyOS</string>
+
+    <string name="nav_home">Inicio</string>
+    <string name="nav_shopping">Compras</string>
+    <string name="nav_tasks">Tareas</string>
+    <string name="nav_calendar">Calendario</string>
+    <string name="nav_more">Más</string>
+
+    <string name="more_title">Más</string>
+    <string name="more_notes">Notas</string>
+    <string name="more_documents">Documentos</string>
+    <string name="more_budget">Presupuesto</string>
+    <string name="more_chat">Chat</string>
+    <string name="more_ai">Family AI</string>
+    <string name="more_notifications">Notificaciones</string>
+    <string name="more_premium">Premium</string>
+    <string name="more_family_members">Miembros de la familia</string>
+    <string name="more_create_family">Crear familia</string>
+    <string name="more_join_family">Unirse a la familia</string>
+    <string name="more_profile">Perfil</string>
+    <string name="more_settings">Ajustes</string>
+
+    <string name="settings_title">Ajustes</string>
+    <string name="settings_appearance">Apariencia</string>
+    <string name="settings_theme_light">Claro</string>
+    <string name="settings_theme_dark">Oscuro</string>
+    <string name="settings_theme_system">Sistema</string>
+    <string name="settings_notifications">Notificaciones</string>
+    <string name="settings_security">Seguridad</string>
+    <string name="settings_biometric">Bloqueo biométrico</string>
+    <string name="settings_biometric_sub">Requerir huella o Face ID al abrir la app</string>
+    <string name="settings_language">Idioma</string>
+    <string name="settings_ai_provider">Proveedor de IA</string>
+    <string name="settings_edit_profile">Editar perfil</string>
+    <string name="settings_logout">Cerrar sesión</string>
+    <string name="settings_language_updated">Idioma actualizado</string>
+    <string name="settings_back">Atrás</string>
+
+    <string name="auth_welcome_back">Bienvenido de nuevo</string>
+    <string name="auth_sign_in_subtitle">Inicia sesión para seguir organizando la vida familiar.</string>
+    <string name="auth_email">Correo</string>
+    <string name="auth_password">Contraseña</string>
+    <string name="auth_remember_me">Recordarme</string>
+    <string name="auth_forgot_password">¿Olvidaste la contraseña?</string>
+    <string name="auth_sign_in">Iniciar sesión</string>
+    <string name="auth_continue_google">Continuar con Google</string>
+    <string name="auth_need_account">¿No tienes cuenta? Regístrate</string>
+    <string name="auth_create_account">Crear cuenta</string>
+    <string name="auth_join_title">Únete a FamilyOS</string>
+    <string name="auth_join_subtitle">Crea una cuenta para compartir tareas, compras y horarios.</string>
+    <string name="auth_display_name">Nombre</string>
+    <string name="auth_confirm_password">Confirmar contraseña</string>
+    <string name="auth_already_have_account">¿Ya tienes cuenta? Inicia sesión</string>
+    <string name="auth_reset_password">Restablecer contraseña</string>
+
+    <string name="channel_general_name">General</string>
+    <string name="channel_general_desc">Notificaciones generales de FamilyOS</string>
+    <string name="channel_tasks_name">Tareas</string>
+    <string name="channel_tasks_desc">Plazos y asignaciones</string>
+    <string name="channel_family_name">Familia</string>
+    <string name="channel_family_desc">Invitaciones, chat y membresía</string>
+    <string name="channel_sync_name">Sincronización</string>
+    <string name="channel_sync_desc">Estado de la sincronización en segundo plano</string>
+</resources>

@@ -47,6 +47,7 @@ import com.familyos.feature.tasks.util.formatTaskEpoch
 import com.familyos.feature.tasks.util.label
 import com.familyos.feature.tasks.viewmodel.TaskEditorEvent
 import com.familyos.feature.tasks.viewmodel.TaskEditorViewModel
+import com.familyos.core.ui.locale.rememberUiStrings
 
 /**
  * Create or edit a task including checklist, recurrence, and attachments.
@@ -59,6 +60,7 @@ fun AddEditTaskScreen(
     viewModel: TaskEditorViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val s = rememberUiStrings()
     val snackbar = remember { SnackbarHostState() }
     var checklistDraft by remember { mutableStateOf("") }
     var assigneeExpanded by remember { mutableStateOf(false) }
@@ -79,10 +81,10 @@ fun AddEditTaskScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (state.isEdit) "Edit task" else "Add task") },
+                title = { Text(if (state.isEdit) s.editTask else s.addTask) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = s.back)
                     }
                 },
             )
@@ -104,28 +106,28 @@ fun AddEditTaskScreen(
                     value = state.title,
                     onValueChange = viewModel::onTitleChange,
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Title") },
+                    label = { Text(s.title) },
                     singleLine = true,
                 )
                 OutlinedTextField(
                     value = state.description,
                     onValueChange = viewModel::onDescriptionChange,
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Description") },
+                    label = { Text(s.description) },
                     minLines = 3,
                 )
                 ExposedDropdownMenuBox(expanded = assigneeExpanded, onExpandedChange = { assigneeExpanded = it }) {
-                    val assigneeName = state.members.firstOrNull { it.userId == state.assigneeId }?.displayName ?: "Unassigned"
+                    val assigneeName = state.members.firstOrNull { it.userId == state.assigneeId }?.displayName ?: s.unassigned
                     OutlinedTextField(
                         value = assigneeName,
                         onValueChange = {},
                         readOnly = true,
-                        label = { Text("Assignee") },
+                        label = { Text(s.assigneeLabel) },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(assigneeExpanded) },
                         modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
                     )
                     ExposedDropdownMenu(expanded = assigneeExpanded, onDismissRequest = { assigneeExpanded = false }) {
-                        DropdownMenuItem(text = { Text("Unassigned") }, onClick = {
+                        DropdownMenuItem(text = { Text(s.unassigned) }, onClick = {
                             viewModel.onAssigneeChange(null)
                             assigneeExpanded = false
                         })
@@ -142,7 +144,7 @@ fun AddEditTaskScreen(
                         value = state.priority.label(),
                         onValueChange = {},
                         readOnly = true,
-                        label = { Text("Priority") },
+                        label = { Text(s.priority) },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(priorityExpanded) },
                         modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
                     )
@@ -160,7 +162,7 @@ fun AddEditTaskScreen(
                         value = state.status.label(),
                         onValueChange = {},
                         readOnly = true,
-                        label = { Text("Status") },
+                        label = { Text(s.status) },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(statusExpanded) },
                         modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
                     )
@@ -173,38 +175,38 @@ fun AddEditTaskScreen(
                         }
                     }
                 }
-                Text("Start: ${formatTaskEpoch(state.startAt)}")
+                Text("${s.startLabel}: ${formatTaskEpoch(state.startAt)}")
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(onClick = { viewModel.onStartAtChange(System.currentTimeMillis()) }) { Text("Set start now") }
-                    Button(onClick = { viewModel.onStartAtChange(null) }) { Text("Clear") }
+                    Button(onClick = { viewModel.onStartAtChange(System.currentTimeMillis()) }) { Text(s.setStartNow) }
+                    Button(onClick = { viewModel.onStartAtChange(null) }) { Text(s.clear) }
                 }
-                Text("Deadline: ${formatTaskEpoch(state.deadline)}")
+                Text("${s.deadlineLabel}: ${formatTaskEpoch(state.deadline)}")
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(onClick = {
                         viewModel.onDeadlineChange(System.currentTimeMillis() + 24L * 60L * 60L * 1000L)
-                    }) { Text("Due tomorrow") }
-                    Button(onClick = { viewModel.onDeadlineChange(null) }) { Text("Clear") }
+                    }) { Text(s.dueTomorrow) }
+                    Button(onClick = { viewModel.onDeadlineChange(null) }) { Text(s.clear) }
                 }
                 OutlinedTextField(
                     value = state.photoUri,
                     onValueChange = viewModel::onPhotoUriChange,
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Photo URI") },
+                    label = { Text(s.photoUri) },
                     singleLine = true,
                 )
                 OutlinedTextField(
                     value = state.attachmentsText,
                     onValueChange = viewModel::onAttachmentsChange,
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Attachments (comma-separated ids/URIs)") },
+                    label = { Text(s.attachmentsHint) },
                 )
-                Text("Checklist")
+                Text(s.checklist)
                 state.checklist.forEach { row ->
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Checkbox(checked = row.isChecked, onCheckedChange = { viewModel.toggleChecklistItem(row.id) })
                         Text(row.text, modifier = Modifier.weight(1f))
                         IconButton(onClick = { viewModel.removeChecklistItem(row.id) }) {
-                            Icon(Icons.Outlined.Delete, contentDescription = "Remove")
+                            Icon(Icons.Outlined.Delete, contentDescription = s.remove)
                         }
                     }
                 }
@@ -213,16 +215,16 @@ fun AddEditTaskScreen(
                         value = checklistDraft,
                         onValueChange = { checklistDraft = it },
                         modifier = Modifier.weight(1f),
-                        label = { Text("Checklist item") },
+                        label = { Text(s.checklistItem) },
                         singleLine = true,
                     )
                     Button(onClick = {
                         viewModel.addChecklistItem(checklistDraft)
                         checklistDraft = ""
-                    }) { Text("Add") }
+                    }) { Text(s.add) }
                 }
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                    Text("Recurrence")
+                    Text(s.recurrence)
                     Switch(checked = state.recurrenceEnabled, onCheckedChange = viewModel::onRecurrenceEnabled)
                 }
                 if (state.recurrenceEnabled) {
@@ -239,12 +241,12 @@ fun AddEditTaskScreen(
                         value = state.recurrenceInterval,
                         onValueChange = viewModel::onRecurrenceInterval,
                         modifier = Modifier.fillMaxWidth(),
-                        label = { Text("Custom interval") },
+                        label = { Text(s.customInterval) },
                         singleLine = true,
                     )
                 }
                 Button(onClick = viewModel::save, enabled = !state.isSaving, modifier = Modifier.fillMaxWidth()) {
-                    Text(if (state.isSaving) "Saving…" else "Save")
+                    Text(if (state.isSaving) s.saving else s.save)
                 }
             }
         }

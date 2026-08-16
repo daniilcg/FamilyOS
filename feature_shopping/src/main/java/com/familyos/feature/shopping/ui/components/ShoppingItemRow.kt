@@ -31,6 +31,7 @@ import com.familyos.core.domain.model.ShoppingStatus
 import com.familyos.feature.shopping.util.formatEpoch
 import com.familyos.feature.shopping.util.formatPrice
 import com.familyos.feature.shopping.util.label
+import com.familyos.core.ui.locale.rememberUiStrings
 
 /**
  * Row card for a shopping list entry with contextual actions.
@@ -45,6 +46,8 @@ fun ShoppingItemRow(
     onDelete: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
+    val s = rememberUiStrings()
+
     Card(
         onClick = onClick,
         modifier = modifier.fillMaxWidth(),
@@ -104,22 +107,22 @@ fun ShoppingItemRow(
             Column {
                 onPurchase?.let {
                     IconButton(onClick = it) {
-                        Icon(Icons.Outlined.CheckCircle, contentDescription = "Purchase")
+                        Icon(Icons.Outlined.CheckCircle, contentDescription = s.purchase)
                     }
                 }
                 onArchive?.let {
                     IconButton(onClick = it) {
-                        Icon(Icons.Outlined.Archive, contentDescription = "Archive")
+                        Icon(Icons.Outlined.Archive, contentDescription = s.archive)
                     }
                 }
                 onRestore?.let {
                     IconButton(onClick = it) {
-                        Icon(Icons.Outlined.Restore, contentDescription = "Restore")
+                        Icon(Icons.Outlined.Restore, contentDescription = s.restore)
                     }
                 }
                 onDelete?.let {
                     IconButton(onClick = it) {
-                        Icon(Icons.Outlined.Delete, contentDescription = "Delete")
+                        Icon(Icons.Outlined.Delete, contentDescription = s.delete)
                     }
                 }
             }

@@ -28,6 +28,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import timber.log.Timber
 import java.io.File
 import javax.inject.Inject
 
@@ -38,6 +39,7 @@ data class BillingUiState(
     val products: List<BillingProductDetails> = emptyList(),
     val isLoading: Boolean = true,
     val isPurchasing: Boolean = false,
+    val isRestoring: Boolean = false,
     val redeemCode: String = "",
     val errorMessage: String? = null,
     val successMessage: String? = null,
@@ -67,30 +69,48 @@ class BillingViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            val user = getCurrentUser()
-            val prefs = preferencesRepository.get()
-            val familyId = prefs.activeFamilyId ?: user?.familyId
-            _state.update { it.copy(familyId = familyId) }
-            if (familyId.isNullOrBlank()) {
-                _state.update { it.copy(isLoading = false, errorMessage = "No active family") }
-                return@launch
-            }
-            billingRepositoryImpl.setActiveFamilyId(familyId)
-            launch {
-                observeSubscription(familyId).collect { sub ->
-                    _state.update { it.copy(subscription = sub, isLoading = false) }
+            try {
+                val user = getCurrentUser()
+                val prefs = preferencesRepository.get()
+                val familyId = prefs.activeFamilyId ?: user?.familyId
+                if (familyId.isNullOrBlank()) {
+                    _state.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = "No active family. Create or join a family first.",
+                        )
+                    }
+                    return@launch
+                }
+                billingRepositoryImpl.setActiveFamilyId(familyId)
+                // Show paywall immediately — never wait on Play Billing connection.
+                _state.update {
+                    it.copy(
+                        familyId = familyId,
+                        subscription = SubscriptionInfo(familyId = familyId),
+                        isLoading = false,
+                    )
+                }
+                launch {
+                    observeSubscription(familyId).collect { sub ->
+                        _state.update { it.copy(subscription = sub, isLoading = false) }
+                    }
+                }
+                launch {
+                    premiumAccess.observeEntitlements(familyId).collect { ents ->
+                        _state.update { it.copy(entitlements = ents) }
+                    }
+                }
+                refreshProducts()
+            } catch (t: Throwable) {
+                Timber.e(t, "Billing init failed")
+                _state.update {
+                    it.copy(isLoading = false, errorMessage = t.message ?: "Failed to load billing")
                 }
             }
-            launch {
-                premiumAccess.observeEntitlements(familyId).collect { ents ->
-                    _state.update { it.copy(entitlements = ents) }
-                }
-            }
-            refreshProducts()
         }
     }
 
-    /** Attaches the Activity required by Play Billing flows. */
     fun bindActivity(activity: Activity) {
         billingRepositoryImpl.setActivityProvider { activity }
     }
@@ -98,8 +118,11 @@ class BillingViewModel @Inject constructor(
     fun refreshProducts() {
         viewModelScope.launch {
             when (val result = billingRepositoryImpl.queryProductDetails()) {
-                is Result.Success -> _state.update { it.copy(products = result.data, errorMessage = null) }
-                is Result.Error -> _state.update { it.copy(errorMessage = result.error.message) }
+                is Result.Success -> _state.update { it.copy(products = result.data) }
+                is Result.Error -> {
+                    // Sideload / no Play products — keep PayPal path usable, don't block UI.
+                    Timber.w("Product query: %s", result.error.message)
+                }
             }
         }
     }
@@ -111,14 +134,18 @@ class BillingViewModel @Inject constructor(
     private fun purchase(productId: String) {
         val familyId = _state.value.familyId ?: return
         viewModelScope.launch {
-            _state.update { it.copy(isPurchasing = true, errorMessage = null) }
-            when (val result = launchPurchase(familyId, productId)) {
-                is Result.Success -> _state.update {
-                    it.copy(isPurchasing = false, successMessage = "Purchase flow launched")
+            _state.update { it.copy(isPurchasing = true, errorMessage = null, successMessage = null) }
+            try {
+                when (val result = launchPurchase(familyId, productId)) {
+                    is Result.Success -> _state.update {
+                        it.copy(successMessage = "Purchase flow launched")
+                    }
+                    is Result.Error -> _state.update {
+                        it.copy(errorMessage = result.error.message)
+                    }
                 }
-                is Result.Error -> _state.update {
-                    it.copy(isPurchasing = false, errorMessage = result.error.message)
-                }
+            } finally {
+                _state.update { it.copy(isPurchasing = false) }
             }
         }
     }
@@ -126,23 +153,29 @@ class BillingViewModel @Inject constructor(
     fun restore() {
         val familyId = _state.value.familyId ?: return
         viewModelScope.launch {
-            _state.update { it.copy(isLoading = true) }
-            when (val result = restorePurchases(familyId)) {
-                is Result.Success -> _state.update {
-                    it.copy(
-                        isLoading = false,
-                        subscription = result.data,
-                        successMessage = if (result.data.isPremium) "Premium restored" else "No active subscription found",
-                    )
+            _state.update { it.copy(isRestoring = true, errorMessage = null) }
+            try {
+                when (val result = restorePurchases(familyId)) {
+                    is Result.Success -> _state.update {
+                        it.copy(
+                            subscription = result.data,
+                            successMessage = if (result.data.isPremium) {
+                                "Premium restored"
+                            } else {
+                                "No active Play subscription found"
+                            },
+                        )
+                    }
+                    is Result.Error -> _state.update {
+                        it.copy(errorMessage = result.error.message)
+                    }
                 }
-                is Result.Error -> _state.update {
-                    it.copy(isLoading = false, errorMessage = result.error.message)
-                }
+            } finally {
+                _state.update { it.copy(isRestoring = false, isLoading = false) }
             }
         }
     }
 
-    /** Opens paypal.me/@segalcommic in the browser. */
     fun openPayPal() {
         val intent = Intent(Intent.ACTION_VIEW, Uri.parse(BillingConstants.PAYPAL_ME_URL)).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -157,7 +190,6 @@ class BillingViewModel @Inject constructor(
         _state.update { it.copy(redeemCode = code) }
     }
 
-    /** Activates Premium for 1 year when the PayPal redeem code matches. */
     fun redeemPayPalCode(code: String = _state.value.redeemCode) {
         val familyId = _state.value.familyId ?: return
         val trimmed = code.trim()

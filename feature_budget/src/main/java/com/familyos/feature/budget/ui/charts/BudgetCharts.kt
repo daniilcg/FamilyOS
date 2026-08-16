@@ -26,6 +26,7 @@ import com.familyos.core.ui.theme.FamilyWarning
 import com.familyos.feature.budget.util.formatMoney
 import com.familyos.feature.budget.util.label
 import kotlin.math.min
+import com.familyos.core.ui.locale.rememberUiStrings
 
 private val chartPalette = listOf(
     FamilyPrimary,
@@ -47,9 +48,10 @@ fun CategoryBarChart(
     currency: String,
     modifier: Modifier = Modifier,
 ) {
+    val s = rememberUiStrings()
     val entries = values.filter { it.value > 0.0 }.entries.toList()
     if (entries.isEmpty()) {
-        Text("No expense data for this period.", style = MaterialTheme.typography.bodyMedium)
+        Text(s.noExpenseData, style = MaterialTheme.typography.bodyMedium)
         return
     }
     val max = entries.maxOf { it.value }
@@ -91,9 +93,10 @@ fun CategoryPieChart(
     currency: String,
     modifier: Modifier = Modifier,
 ) {
+    val s = rememberUiStrings()
     val entries = values.filter { it.value > 0.0 }.entries.toList()
     if (entries.isEmpty()) {
-        Text("No expense data for this period.", style = MaterialTheme.typography.bodyMedium)
+        Text(s.noExpenseData, style = MaterialTheme.typography.bodyMedium)
         return
     }
     val total = entries.sumOf { it.value }

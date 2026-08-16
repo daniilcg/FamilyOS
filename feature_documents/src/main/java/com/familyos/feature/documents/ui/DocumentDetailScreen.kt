@@ -32,6 +32,7 @@ import com.familyos.core.domain.model.FamilyDocument
 import com.familyos.core.ui.components.FamilyLoading
 import java.text.DateFormat
 import java.util.Date
+import com.familyos.core.ui.locale.rememberUiStrings
 
 /**
  * Shows encrypted document metadata and actions to open or delete.
@@ -47,25 +48,27 @@ fun DocumentDetailScreen(
     onOpenDecrypted: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val s = rememberUiStrings()
+
     var confirmDelete by remember { mutableStateOf(false) }
 
     Scaffold(
         modifier = modifier,
         topBar = {
             TopAppBar(
-                title = { Text(document?.title ?: "Document") },
+                title = { Text(document?.title ?: s.documentTitle) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = s.back)
                     }
                 },
                 actions = {
                     if (document != null) {
                         IconButton(onClick = { onOpenDecrypted(document.id) }) {
-                            Icon(Icons.Default.Download, contentDescription = "Open decrypted")
+                            Icon(Icons.Default.Download, contentDescription = s.openDecrypted)
                         }
                         IconButton(onClick = { confirmDelete = true }) {
-                            Icon(Icons.Default.Delete, contentDescription = "Delete")
+                            Icon(Icons.Default.Delete, contentDescription = s.delete)
                         }
                     }
                 },
@@ -76,7 +79,7 @@ fun DocumentDetailScreen(
             isLoading && document == null -> FamilyLoading()
             document == null -> {
                 Column(Modifier.padding(padding).padding(24.dp)) {
-                    Text(errorMessage ?: "Document not found")
+                    Text(errorMessage ?: s.documentNotFound)
                 }
             }
             else -> {
@@ -87,19 +90,19 @@ fun DocumentDetailScreen(
                         .padding(24.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    MetaRow("Type", document.type.name)
-                    MetaRow("MIME", document.mimeType)
-                    MetaRow("Size", "${document.sizeBytes} bytes")
-                    MetaRow("Encrypted", if (document.isEncrypted) "AES-256" else "No")
-                    MetaRow("Uploaded", DateFormat.getDateTimeInstance().format(Date(document.createdAt)))
-                    MetaRow("Tags", document.tags.joinToString().ifBlank { "—" })
-                    MetaRow("Storage", document.storagePath)
+                    MetaRow(s.type, document.type.name)
+                    MetaRow(s.mime, document.mimeType)
+                    MetaRow(s.sizeBytes, "${document.sizeBytes} ${s.bytesSuffix}")
+                    MetaRow(s.encrypted, if (document.isEncrypted) "AES-256" else s.noValue)
+                    MetaRow(s.uploaded, DateFormat.getDateTimeInstance().format(Date(document.createdAt)))
+                    MetaRow(s.tags, document.tags.joinToString().ifBlank { "—" })
+                    MetaRow(s.storage, document.storagePath)
                     Spacer(Modifier.height(16.dp))
                     Button(
                         onClick = { onOpenDecrypted(document.id) },
                         modifier = Modifier.fillMaxWidth(),
                     ) {
-                        Text("Decrypt & open")
+                        Text(s.decryptOpen)
                     }
                     errorMessage?.let {
                         Text(it, color = MaterialTheme.colorScheme.error)
@@ -112,16 +115,16 @@ fun DocumentDetailScreen(
     if (confirmDelete && document != null) {
         AlertDialog(
             onDismissRequest = { confirmDelete = false },
-            title = { Text("Delete document?") },
-            text = { Text("This removes \"${document.title}\" from the family vault.") },
+            title = { Text(s.deleteDocumentQ) },
+            text = { Text(s.deleteDocumentBody.format(document.title)) },
             confirmButton = {
                 TextButton(onClick = {
                     confirmDelete = false
                     onDelete(document.id)
-                }) { Text("Delete") }
+                }) { Text(s.delete) }
             },
             dismissButton = {
-                TextButton(onClick = { confirmDelete = false }) { Text("Cancel") }
+                TextButton(onClick = { confirmDelete = false }) { Text(s.cancel) }
             },
         )
     }

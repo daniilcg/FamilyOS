@@ -26,6 +26,7 @@ import com.familyos.core.domain.util.AppError
 import com.familyos.core.domain.util.Result
 import com.familyos.feature.billing.BillingConstants
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -39,6 +40,7 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
@@ -49,10 +51,6 @@ private val Context.billingDataStore by preferencesDataStore("familyos_billing")
 
 /**
  * Google Play Billing Library 7 implementation for FamilyOS Premium subscriptions.
- *
- * Product IDs:
- * - [BillingProducts.PREMIUM_MONTHLY]
- * - [BillingProducts.PREMIUM_YEARLY]
  */
 @Singleton
 class BillingRepositoryImpl @Inject constructor(
@@ -73,6 +71,10 @@ class BillingRepositoryImpl @Inject constructor(
     @Volatile
     private var activeFamilyId: String? = null
 
+    /** Single in-flight connection; prevents double startConnection() hangs. */
+    @Volatile
+    private var connecting: CompletableDeferred<Boolean>? = null
+
     private val billingClient: BillingClient = BillingClient.newBuilder(context)
         .setListener(this)
         .enablePendingPurchases(
@@ -83,16 +85,17 @@ class BillingRepositoryImpl @Inject constructor(
         .build()
 
     init {
-        startConnection()
-        scope.launch { restoreManualPremiumFromStore() }
+        scope.launch {
+            runCatching { ensureConnected() }
+            runCatching { queryProductDetailsInternal() }
+            restoreManualPremiumFromStore()
+        }
     }
 
-    /** Registers the foreground activity used to launch billing flows. */
     fun setActivityProvider(provider: () -> Activity?) {
         activityProvider = provider
     }
 
-    /** Sets the family context for incoming purchase callbacks. */
     fun setActiveFamilyId(familyId: String) {
         activeFamilyId = familyId
         if (subscriptionByFamily.value[familyId] == null) {
@@ -116,10 +119,18 @@ class BillingRepositoryImpl @Inject constructor(
     override suspend fun launchPurchase(familyId: String, productId: String): Result<Unit> =
         withContext(Dispatchers.Main) {
             setActiveFamilyId(familyId)
-            ensureConnected()
+            if (!ensureConnected()) {
+                return@withContext Result.failure(
+                    AppError.Billing("Google Play Billing unavailable. Use PayPal below or try again later."),
+                )
+            }
             val details = productDetails.value.firstOrNull { it.productId == productId }
                 ?: queryProductDetailsInternal().getOrNull()?.firstOrNull { it.productId == productId }
-                ?: return@withContext Result.failure(AppError.Billing("Product not found: $productId"))
+                ?: return@withContext Result.failure(
+                    AppError.Billing(
+                        "Play product not available (sideload / no Play Store). Use PayPal activation below.",
+                    ),
+                )
             val offerToken = details.subscriptionOfferDetails?.firstOrNull()?.offerToken
                 ?: return@withContext Result.failure(AppError.Billing("No subscription offer for $productId"))
             val activity = activityProvider?.invoke()
@@ -138,7 +149,11 @@ class BillingRepositoryImpl @Inject constructor(
             if (result.responseCode == BillingClient.BillingResponseCode.OK) {
                 Result.success(Unit)
             } else {
-                Result.failure(AppError.Billing(result.debugMessage.ifBlank { "Billing flow failed (${result.responseCode})" }))
+                Result.failure(
+                    AppError.Billing(
+                        result.debugMessage.ifBlank { "Billing flow failed (${result.responseCode})" },
+                    ),
+                )
             }
         }
 
@@ -161,10 +176,6 @@ class BillingRepositoryImpl @Inject constructor(
         return Result.success(info)
     }
 
-    /**
-     * Grants Premium for [BillingConstants.MANUAL_PREMIUM_DAYS] after PayPal redeem.
-     * Persists in memory and DataStore so entitlement survives process death.
-     */
     suspend fun grantManualPremium(familyId: String): Result<SubscriptionInfo> {
         val now = System.currentTimeMillis()
         val info = SubscriptionInfo(
@@ -203,13 +214,23 @@ class BillingRepositoryImpl @Inject constructor(
     override suspend fun restorePurchases(familyId: String): Result<SubscriptionInfo> =
         withContext(Dispatchers.IO) {
             setActiveFamilyId(familyId)
-            ensureConnected()
+            // Keep manual PayPal premium if present
+            val existing = subscriptionByFamily.value[familyId]
+            if (existing?.isPremium == true && existing.productId == BillingConstants.PAYPAL_PRODUCT_ID) {
+                return@withContext Result.success(existing)
+            }
+            if (!ensureConnected()) {
+                return@withContext Result.success(
+                    existing ?: SubscriptionInfo(familyId = familyId),
+                )
+            }
             val purchases = queryActiveSubscriptions()
             val premium = purchases.firstOrNull { purchase ->
                 purchase.products.any { it in BillingProducts.ALL }
             }
             if (premium == null) {
-                val free = SubscriptionInfo(familyId = familyId, plan = SubscriptionPlan.FREE, status = SubscriptionStatus.NONE)
+                val free = existing?.takeIf { it.isPremium }
+                    ?: SubscriptionInfo(familyId = familyId, plan = SubscriptionPlan.FREE, status = SubscriptionStatus.NONE)
                 subscriptionByFamily.update { it + (familyId to free) }
                 return@withContext Result.success(free)
             }
@@ -268,41 +289,47 @@ class BillingRepositoryImpl @Inject constructor(
         }
     }
 
-    private fun startConnection() {
-        billingClient.startConnection(object : BillingClientStateListener {
-            override fun onBillingSetupFinished(billingResult: BillingResult) {
-                if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-                    scope.launch { queryProductDetailsInternal() }
+    /**
+     * Connects to Play Billing with a single in-flight attempt and timeout.
+     * @return true if ready, false if Play Billing is unavailable (sideload / timeout).
+     */
+    private suspend fun ensureConnected(): Boolean {
+        if (billingClient.isReady) return true
+        return mutex.withLock {
+            if (billingClient.isReady) return@withLock true
+            val existing = connecting
+            if (existing != null) {
+                return@withLock withTimeoutOrNull(CONNECT_TIMEOUT_MS) { existing.await() } == true
+            }
+            val deferred = CompletableDeferred<Boolean>()
+            connecting = deferred
+            billingClient.startConnection(object : BillingClientStateListener {
+                override fun onBillingSetupFinished(billingResult: BillingResult) {
+                    val ok = billingResult.responseCode == BillingClient.BillingResponseCode.OK
+                    if (!deferred.isCompleted) deferred.complete(ok)
+                    connecting = null
                 }
-            }
 
-            override fun onBillingServiceDisconnected() {
-                // BillingClient reconnects on next ensureConnected()
+                override fun onBillingServiceDisconnected() {
+                    connecting = null
+                }
+            })
+            val ok = withTimeoutOrNull(CONNECT_TIMEOUT_MS) { deferred.await() } == true
+            if (!ok && !deferred.isCompleted) {
+                deferred.complete(false)
+                connecting = null
             }
-        })
-    }
-
-    private suspend fun ensureConnected() {
-        if (billingClient.isReady) return
-        mutex.withLock {
-            if (billingClient.isReady) return
-            suspendCancellableCoroutine { cont ->
-                billingClient.startConnection(object : BillingClientStateListener {
-                    override fun onBillingSetupFinished(billingResult: BillingResult) {
-                        if (cont.isActive) cont.resume(Unit)
-                    }
-
-                    override fun onBillingServiceDisconnected() {
-                        if (cont.isActive) cont.resume(Unit)
-                    }
-                })
-            }
+            ok && billingClient.isReady
         }
     }
 
     private suspend fun queryProductDetailsInternal(): Result<List<ProductDetails>> =
         withContext(Dispatchers.IO) {
-            ensureConnected()
+            if (!ensureConnected()) {
+                return@withContext Result.failure(
+                    AppError.Billing("Play Billing unavailable"),
+                )
+            }
             val params = QueryProductDetailsParams.newBuilder()
                 .setProductList(
                     BillingProducts.ALL.map { id ->
@@ -313,47 +340,63 @@ class BillingRepositoryImpl @Inject constructor(
                     },
                 )
                 .build()
-            suspendCancellableCoroutine { cont ->
-                // Billing Library 7: listener receives (BillingResult, List<ProductDetails>).
-                billingClient.queryProductDetailsAsync(params) { result, productDetailsList ->
-                    if (result.responseCode == BillingClient.BillingResponseCode.OK) {
-                        val list = productDetailsList.orEmpty()
-                        productDetails.value = list
-                        cont.resume(Result.success(list))
-                    } else {
-                        cont.resume(
-                            Result.failure(
-                                AppError.Billing(result.debugMessage.ifBlank { "queryProductDetails failed" }),
-                            ),
-                        )
+            withTimeoutOrNull(QUERY_TIMEOUT_MS) {
+                suspendCancellableCoroutine { cont ->
+                    billingClient.queryProductDetailsAsync(params) { result, productDetailsList ->
+                        if (!cont.isActive) return@queryProductDetailsAsync
+                        if (result.responseCode == BillingClient.BillingResponseCode.OK) {
+                            val list = productDetailsList.orEmpty()
+                            productDetails.value = list
+                            cont.resume(Result.success(list))
+                        } else {
+                            cont.resume(
+                                Result.failure(
+                                    AppError.Billing(
+                                        result.debugMessage.ifBlank { "queryProductDetails failed" },
+                                    ),
+                                ),
+                            )
+                        }
                     }
                 }
-            }
+            } ?: Result.failure(AppError.Billing("Play Billing query timed out"))
         }
 
     private suspend fun queryActiveSubscriptions(): List<Purchase> =
-        suspendCancellableCoroutine { cont ->
-            billingClient.queryPurchasesAsync(
-                QueryPurchasesParams.newBuilder()
-                    .setProductType(BillingClient.ProductType.SUBS)
-                    .build(),
-            ) { result, purchases ->
-                if (result.responseCode == BillingClient.BillingResponseCode.OK) {
-                    cont.resume(purchases)
-                } else {
-                    cont.resume(emptyList())
+        withTimeoutOrNull(QUERY_TIMEOUT_MS) {
+            suspendCancellableCoroutine { cont ->
+                billingClient.queryPurchasesAsync(
+                    QueryPurchasesParams.newBuilder()
+                        .setProductType(BillingClient.ProductType.SUBS)
+                        .build(),
+                ) { result, purchases ->
+                    if (!cont.isActive) return@queryPurchasesAsync
+                    if (result.responseCode == BillingClient.BillingResponseCode.OK) {
+                        cont.resume(purchases)
+                    } else {
+                        cont.resume(emptyList())
+                    }
                 }
             }
-        }
+        } ?: emptyList()
 
     private suspend fun acknowledgeIfNeeded(purchase: Purchase) {
         if (purchase.isAcknowledged) return
-        suspendCancellableCoroutine { cont ->
-            billingClient.acknowledgePurchase(
-                AcknowledgePurchaseParams.newBuilder()
-                    .setPurchaseToken(purchase.purchaseToken)
-                    .build(),
-            ) { cont.resume(Unit) }
+        withTimeoutOrNull(QUERY_TIMEOUT_MS) {
+            suspendCancellableCoroutine { cont ->
+                billingClient.acknowledgePurchase(
+                    AcknowledgePurchaseParams.newBuilder()
+                        .setPurchaseToken(purchase.purchaseToken)
+                        .build(),
+                ) {
+                    if (cont.isActive) cont.resume(Unit)
+                }
+            }
         }
+    }
+
+    private companion object {
+        const val CONNECT_TIMEOUT_MS = 8_000L
+        const val QUERY_TIMEOUT_MS = 10_000L
     }
 }

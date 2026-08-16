@@ -63,6 +63,7 @@ import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 import kotlinx.coroutines.delay
 import java.io.File
+import com.familyos.core.ui.locale.rememberUiStrings
 
 private val EMOJIS = listOf("😀", "😂", "❤️", "👍", "🎉", "🙏", "🔥", "🏠", "🛒", "✅")
 
@@ -81,6 +82,8 @@ fun ChatScreen(
     onRecordingChanged: (Boolean, Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val s = rememberUiStrings()
+
     val listState = rememberLazyListState()
     LaunchedEffect(state.messages.size) {
         if (state.messages.isNotEmpty()) {
@@ -94,7 +97,7 @@ fun ChatScreen(
             TopAppBar(
                 title = {
                     Column {
-                        Text(state.thread?.title ?: "Family Chat")
+                        Text(state.thread?.title ?: s.familyChat)
                         OnlineStatusRow(state.presence)
                     }
                 },
@@ -165,12 +168,13 @@ fun ChatScreen(
 
 @Composable
 private fun OnlineStatusRow(presence: List<MemberPresence>) {
+    val s = rememberUiStrings()
     val online = presence.filter { it.isOnline }
     Text(
         text = when {
-            online.isEmpty() -> "No one online"
-            online.size == 1 -> "${online.first().displayName} online"
-            else -> "${online.size} online"
+            online.isEmpty() -> s.noOneOnline
+            online.size == 1 -> s.oneOnline.format(online.first().displayName)
+            else -> s.manyOnline.format(online.size)
         },
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
@@ -179,6 +183,7 @@ private fun OnlineStatusRow(presence: List<MemberPresence>) {
 
 @Composable
 private fun MessageBubble(message: ChatMessage, isMine: Boolean, readCount: Int) {
+    val s = rememberUiStrings()
     val bg = if (isMine) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant
     val fg = if (isMine) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
     Column(
@@ -198,7 +203,7 @@ private fun MessageBubble(message: ChatMessage, isMine: Boolean, readCount: Int)
                     if (imageSource != null) {
                         AsyncImage(
                             model = imageSource,
-                            contentDescription = "Photo",
+                            contentDescription = s.photo,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(200.dp)
@@ -210,7 +215,7 @@ private fun MessageBubble(message: ChatMessage, isMine: Boolean, readCount: Int)
                     }
                 }
                 MessageType.VOICE -> Text(
-                    "🎤 Voice (${(message.durationMs ?: 0) / 1000}s)",
+                    s.voiceMessage.format((message.durationMs ?: 0) / 1000),
                     color = fg,
                 )
                 else -> Text(message.body, color = fg)
@@ -220,7 +225,7 @@ private fun MessageBubble(message: ChatMessage, isMine: Boolean, readCount: Int)
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     Icons.Default.DoneAll,
-                    contentDescription = "Read receipts",
+                    contentDescription = s.readReceipts,
                     modifier = Modifier.size(14.dp),
                     tint = if (readCount > 1) MaterialTheme.colorScheme.primary
                     else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
@@ -268,6 +273,8 @@ private fun ComposerBar(
     onSendVoice: (String, Long) -> Unit,
     onRecordingChanged: (Boolean, Long) -> Unit,
 ) {
+    val s = rememberUiStrings()
+
     val context = LocalContext.current
     val micPermission = rememberPermissionState(Manifest.permission.RECORD_AUDIO)
     val imagePermission = rememberPermissionState(
@@ -327,12 +334,12 @@ private fun ComposerBar(
                 photoPicker.launch("image/*")
             },
         ) {
-            Icon(Icons.Default.Image, contentDescription = "Send photo")
+            Icon(Icons.Default.Image, contentDescription = s.sendPhoto)
         }
 
         if (isRecording) {
             Text(
-                "Recording ${(recordingMs / 1000)}s",
+                s.recording.format(recordingMs / 1000),
                 modifier = Modifier.weight(1f),
                 color = MaterialTheme.colorScheme.error,
             )
@@ -350,14 +357,14 @@ private fun ComposerBar(
                     }
                 },
             ) {
-                Icon(Icons.Default.Stop, contentDescription = "Stop recording")
+                Icon(Icons.Default.Stop, contentDescription = s.stopRecording)
             }
         } else {
             OutlinedTextField(
                 value = draft,
                 onValueChange = onDraftChange,
                 modifier = Modifier.weight(1f),
-                placeholder = { Text("Message") },
+                placeholder = { Text(s.messagePlaceholder) },
                 maxLines = 4,
             )
             IconButton(
@@ -384,10 +391,10 @@ private fun ComposerBar(
                     onRecordingChanged(true, 0L)
                 },
             ) {
-                Icon(Icons.Default.Mic, contentDescription = "Record voice")
+                Icon(Icons.Default.Mic, contentDescription = s.recordVoice)
             }
             IconButton(onClick = onSendText, enabled = draft.isNotBlank()) {
-                Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send")
+                Icon(Icons.AutoMirrored.Filled.Send, contentDescription = s.send)
             }
         }
     }

@@ -38,6 +38,7 @@ import com.familyos.core.ui.components.FamilyLoading
 import com.familyos.feature.documents.viewmodel.DocumentsUiState
 import java.text.DateFormat
 import java.util.Date
+import com.familyos.core.ui.locale.rememberUiStrings
 
 /**
  * Lists encrypted family documents with type filters and search.
@@ -53,21 +54,23 @@ fun DocumentListScreen(
     onFilterChange: (DocumentType?) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val s = rememberUiStrings()
+
     Scaffold(
         modifier = modifier,
         topBar = {
             TopAppBar(
-                title = { Text("Documents") },
+                title = { Text(s.documentsTitle) },
                 actions = {
                     IconButton(onClick = onLock) {
-                        Icon(Icons.Default.Lock, contentDescription = "Lock vault")
+                        Icon(Icons.Default.Lock, contentDescription = s.lockVault)
                     }
                 },
             )
         },
         floatingActionButton = {
             FloatingActionButton(onClick = onImport) {
-                Icon(Icons.Default.Add, contentDescription = "Import document")
+                Icon(Icons.Default.Add, contentDescription = s.importDocument)
             }
         },
     ) { padding ->
@@ -82,7 +85,7 @@ fun DocumentListScreen(
                 onValueChange = onQueryChange,
                 modifier = Modifier.fillMaxWidth(),
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                placeholder = { Text("Search titles and tags") },
+                placeholder = { Text(s.searchTitlesTags) },
                 singleLine = true,
             )
             Row(
@@ -95,7 +98,7 @@ fun DocumentListScreen(
                 FilterChip(
                     selected = state.filterType == null,
                     onClick = { onFilterChange(null) },
-                    label = { Text("All") },
+                    label = { Text(s.all) },
                 )
                 DocumentType.entries.forEach { type ->
                     FilterChip(
@@ -107,7 +110,7 @@ fun DocumentListScreen(
             }
             when {
                 state.isLoading -> FamilyLoading()
-                state.documents.isEmpty() -> FamilyEmptyState("No documents yet. Import a PDF, DOCX, or image.")
+                state.documents.isEmpty() -> FamilyEmptyState(s.noDocumentsYet)
                 else -> LazyColumn(
                     contentPadding = PaddingValues(bottom = 88.dp),
                     verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -123,6 +126,8 @@ fun DocumentListScreen(
 
 @Composable
 private fun DocumentRow(document: FamilyDocument, onClick: () -> Unit) {
+    val s = rememberUiStrings()
+
     ListItem(
         headlineContent = { Text(document.title) },
         supportingContent = {

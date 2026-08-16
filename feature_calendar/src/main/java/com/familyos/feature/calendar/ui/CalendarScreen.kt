@@ -61,6 +61,7 @@ import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.TextStyle
 import java.util.Locale
+import com.familyos.core.ui.locale.rememberUiStrings
 
 /**
  * Calendar hub hosting Month, Week, Day, and Agenda views.
@@ -73,6 +74,7 @@ fun CalendarScreen(
     viewModel: CalendarViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val s = rememberUiStrings()
     val snackbar = remember { SnackbarHostState() }
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
@@ -109,6 +111,8 @@ internal fun CalendarContent(
     onBack: (() -> Unit)?,
     onClearError: () -> Unit,
 ) {
+    val s = rememberUiStrings()
+
     LaunchedEffect(state.errorMessage) {
         state.errorMessage?.let {
             snackbar.showSnackbar(it)
@@ -118,34 +122,34 @@ internal fun CalendarContent(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Calendar") },
+                title = { Text(s.calendarTitle) },
                 navigationIcon = {
                     if (onBack != null) {
                         IconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = s.back)
                         }
                     }
                 },
                 actions = {
                     IconButton(onClick = { onShift(false) }) {
-                        Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = "Previous")
+                        Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = s.previous)
                     }
                     IconButton(onClick = { onShift(true) }) {
-                        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = "Next")
+                        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = s.next)
                     }
                 },
             )
         },
         floatingActionButton = {
             FloatingActionButton(onClick = onAddClick) {
-                Icon(Icons.Filled.Add, contentDescription = "Add event")
+                Icon(Icons.Filled.Add, contentDescription = s.addEventCd)
             }
         },
         snackbarHost = { SnackbarHost(snackbar) },
     ) { padding ->
         when {
             state.isLoading && state.events.isEmpty() -> FamilyLoading()
-            state.familyId.isNullOrBlank() -> FamilyEmptyState(message = "Join a family to use the shared calendar.")
+            state.familyId.isNullOrBlank() -> FamilyEmptyState(message = s.joinFamilyForCalendar)
             else -> Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -172,7 +176,7 @@ internal fun CalendarContent(
                     FilterChip(
                         selected = state.typeFilter == null,
                         onClick = { onTypeFilter(null) },
-                        label = { Text("All types") },
+                        label = { Text(s.allTypes) },
                     )
                     EventUiTypes.forEach { type ->
                         FilterChip(
@@ -206,7 +210,7 @@ internal fun CalendarContent(
                     CalendarViewMode.AGENDA -> state.events
                 }
                 if (visibleEvents.isEmpty()) {
-                    FamilyEmptyState(message = "No events in this range.")
+                    FamilyEmptyState(message = s.noEventsInRange)
                 } else {
                     LazyColumn(
                         contentPadding = PaddingValues(bottom = 88.dp),
@@ -229,12 +233,14 @@ private fun MonthGrid(
     eventsByDay: Map<LocalDate, List<CalendarEvent>>,
     onSelect: (LocalDate) -> Unit,
 ) {
+    val s = rememberUiStrings()
+
     val first = month.atDay(1)
     val startOffset = (first.dayOfWeek.value + 6) % 7
     val days = month.lengthOfMonth()
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Row(modifier = Modifier.fillMaxWidth()) {
-            listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun").forEach { label ->
+            listOf(s.mon, s.tue, s.wed, s.thu, s.fri, s.sat, s.sun).forEach { label ->
                 Text(
                     text = label,
                     modifier = Modifier.weight(1f),
@@ -289,12 +295,14 @@ private fun EventCard(
     onClick: () -> Unit,
     onDelete: () -> Unit,
 ) {
+    val s = rememberUiStrings()
+
     Card(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(event.title, style = MaterialTheme.typography.titleMedium)
             Text(
                 "${event.type.label()} · ${formatEventDay(event.startAt)} ${
-                    if (event.allDay) "All day" else formatEventTime(event.startAt) + "–" + formatEventTime(event.endAt)
+                    if (event.allDay) s.allDay else formatEventTime(event.startAt) + "–" + formatEventTime(event.endAt)
                 }",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
@@ -303,7 +311,7 @@ private fun EventCard(
                 Text(event.location.orEmpty(), style = MaterialTheme.typography.bodySmall)
             }
             Text(
-                text = "Delete",
+                text = s.delete,
                 color = MaterialTheme.colorScheme.error,
                 modifier = Modifier.clickable(onClick = onDelete),
             )

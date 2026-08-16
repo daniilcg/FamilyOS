@@ -43,6 +43,7 @@ import com.familyos.core.ui.components.FamilyLoading
 import com.familyos.core.ui.theme.FamilyDanger
 import com.familyos.feature.profile.ProfileEvent
 import com.familyos.feature.profile.ProfileViewModel
+import com.familyos.core.ui.locale.rememberUiStrings
 
 /**
  * Profile screen showing avatar, name, email, and delete-account action.
@@ -55,6 +56,7 @@ fun ProfileScreen(
     viewModel: ProfileViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val s = rememberUiStrings()
     val snackbar = remember { SnackbarHostState() }
 
     LaunchedEffect(Unit) {
@@ -76,18 +78,18 @@ fun ProfileScreen(
     if (state.showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { viewModel.setDeleteConfirmVisible(false) },
-            title = { Text("Delete account?") },
+            title = { Text(s.deleteAccountQ) },
             text = {
-                Text("This permanently deletes your FamilyOS account and cannot be undone.")
+                Text(s.deleteAccountBody)
             },
             confirmButton = {
                 TextButton(onClick = viewModel::confirmDeleteAccount) {
-                    Text("Delete", color = FamilyDanger)
+                    Text(s.delete, color = FamilyDanger)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { viewModel.setDeleteConfirmVisible(false) }) {
-                    Text("Cancel")
+                    Text(s.cancel)
                 }
             },
         )
@@ -96,10 +98,10 @@ fun ProfileScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Profile") },
+                title = { Text(s.profileTitle) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = s.back)
                     }
                 },
             )
@@ -121,7 +123,7 @@ fun ProfileScreen(
                 if (!photoUrl.isNullOrBlank()) {
                     AsyncImage(
                         model = photoUrl,
-                        contentDescription = "Avatar",
+                        contentDescription = s.avatar,
                         modifier = Modifier
                             .size(96.dp)
                             .clip(CircleShape),
@@ -130,7 +132,7 @@ fun ProfileScreen(
                 } else {
                     Icon(
                         imageVector = Icons.Outlined.Person,
-                        contentDescription = "Avatar",
+                        contentDescription = s.avatar,
                         modifier = Modifier.size(96.dp),
                         tint = MaterialTheme.colorScheme.primary,
                     )
@@ -140,7 +142,7 @@ fun ProfileScreen(
                     value = state.displayName,
                     onValueChange = viewModel::onDisplayNameChange,
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Display name") },
+                    label = { Text(s.displayName) },
                     singleLine = true,
                     enabled = !state.isSaving,
                 )
@@ -149,7 +151,7 @@ fun ProfileScreen(
                     value = state.user?.email.orEmpty(),
                     onValueChange = {},
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Email") },
+                    label = { Text(s.email) },
                     singleLine = true,
                     enabled = false,
                 )
@@ -159,14 +161,14 @@ fun ProfileScreen(
                     modifier = Modifier.fillMaxWidth(),
                     enabled = !state.isSaving,
                 ) {
-                    Text(if (state.isSaving) "Saving…" else "Save changes")
+                    Text(if (state.isSaving) s.saving else s.saveChanges)
                 }
                 Spacer(modifier = Modifier.height(32.dp))
                 OutlinedButton(
                     onClick = { viewModel.setDeleteConfirmVisible(true) },
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Text("Delete account", color = FamilyDanger)
+                    Text(s.deleteAccount, color = FamilyDanger)
                 }
             }
         }

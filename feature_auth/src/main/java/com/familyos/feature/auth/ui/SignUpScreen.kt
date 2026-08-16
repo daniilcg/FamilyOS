@@ -44,6 +44,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.familyos.feature.auth.AuthEvent
 import com.familyos.feature.auth.AuthViewModel
+import com.familyos.core.ui.locale.rememberUiStrings
 
 /**
  * Email registration screen.
@@ -56,6 +57,7 @@ fun SignUpScreen(
     viewModel: AuthViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val s = rememberUiStrings()
     val snackbar = remember { SnackbarHostState() }
 
     LaunchedEffect(Unit) {
@@ -74,10 +76,10 @@ fun SignUpScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Create account") },
+                title = { Text(s.createAccount) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = s.back)
                     }
                 },
             )
@@ -99,11 +101,11 @@ fun SignUpScreen(
             ) {
             Spacer(modifier = Modifier.height(12.dp))
             Text(
-                text = "Join FamilyOS",
+                text = s.joinFamilyOs,
                 style = MaterialTheme.typography.titleLarge,
             )
             Text(
-                text = "Create an account to start sharing tasks, shopping, and schedules.",
+                text = s.signUpSubtitle,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
             )
@@ -113,7 +115,7 @@ fun SignUpScreen(
                 value = state.displayName,
                 onValueChange = viewModel::onDisplayNameChange,
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("Display name") },
+                label = { Text(s.displayName) },
                 leadingIcon = { Icon(Icons.Outlined.Person, contentDescription = null) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
@@ -124,7 +126,7 @@ fun SignUpScreen(
                 value = state.email,
                 onValueChange = viewModel::onEmailChange,
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("Email") },
+                label = { Text(s.email) },
                 leadingIcon = { Icon(Icons.Outlined.Email, contentDescription = null) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(
@@ -138,7 +140,7 @@ fun SignUpScreen(
                 value = state.password,
                 onValueChange = viewModel::onPasswordChange,
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("Password") },
+                label = { Text(s.password) },
                 leadingIcon = { Icon(Icons.Outlined.Lock, contentDescription = null) },
                 visualTransformation = PasswordVisualTransformation(),
                 singleLine = true,
@@ -153,7 +155,7 @@ fun SignUpScreen(
                 value = state.confirmPassword,
                 onValueChange = viewModel::onConfirmPasswordChange,
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("Confirm password") },
+                label = { Text(s.confirmPassword) },
                 leadingIcon = { Icon(Icons.Outlined.Lock, contentDescription = null) },
                 visualTransformation = PasswordVisualTransformation(),
                 singleLine = true,
@@ -170,7 +172,7 @@ fun SignUpScreen(
                     onCheckedChange = viewModel::onRememberMeChange,
                     enabled = !state.isLoading,
                 )
-                Text("Remember me")
+                Text(s.rememberMe)
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -188,7 +190,7 @@ fun SignUpScreen(
                         color = MaterialTheme.colorScheme.onPrimary,
                     )
                 } else {
-                    Text("Create account")
+                    Text(s.createAccount)
                 }
             }
             TextButton(
@@ -196,7 +198,7 @@ fun SignUpScreen(
                 modifier = Modifier.align(Alignment.CenterHorizontally),
                 enabled = !state.isLoading,
             ) {
-                Text("Already have an account? Sign in")
+                Text(s.alreadyHaveAccount)
             }
             Spacer(modifier = Modifier.height(24.dp))
             }

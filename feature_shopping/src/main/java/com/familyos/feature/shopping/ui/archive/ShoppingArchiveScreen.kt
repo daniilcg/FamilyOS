@@ -30,6 +30,7 @@ import com.familyos.core.ui.components.FamilyLoading
 import com.familyos.feature.shopping.ui.components.ShoppingItemRow
 import com.familyos.feature.shopping.viewmodel.ShoppingEvent
 import com.familyos.feature.shopping.viewmodel.ShoppingViewModel
+import com.familyos.core.ui.locale.rememberUiStrings
 
 /**
  * Archived shopping items with restore and delete actions.
@@ -42,6 +43,7 @@ fun ShoppingArchiveScreen(
     viewModel: ShoppingViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val s = rememberUiStrings()
     val snackbar = remember { SnackbarHostState() }
 
     LaunchedEffect(Unit) {
@@ -56,10 +58,10 @@ fun ShoppingArchiveScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Archive") },
+                title = { Text(s.archiveTitle) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = s.back)
                     }
                 },
             )
@@ -68,7 +70,7 @@ fun ShoppingArchiveScreen(
     ) { padding ->
         when {
             state.isLoading && state.items.isEmpty() -> FamilyLoading()
-            state.items.isEmpty() -> FamilyEmptyState(message = "Archive is empty.")
+            state.items.isEmpty() -> FamilyEmptyState(message = s.archiveEmpty)
             else -> LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()

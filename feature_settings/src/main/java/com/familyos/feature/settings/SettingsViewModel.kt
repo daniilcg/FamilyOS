@@ -14,9 +14,11 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -120,7 +122,9 @@ class SettingsViewModel @Inject constructor(
             val normalized = com.familyos.core.locale.AppLocale.normalize(tag)
             when (val result = userPreferencesRepository.setLanguage(normalized)) {
                 is Result.Success -> {
-                    com.familyos.core.locale.AppLocale.apply(normalized)
+                    withContext(Dispatchers.Main.immediate) {
+                        com.familyos.core.locale.AppLocale.apply(normalized)
+                    }
                     _uiState.update { it.copy(infoMessage = "Language updated") }
                 }
                 is Result.Error -> _uiState.update { it.copy(errorMessage = result.error.message) }

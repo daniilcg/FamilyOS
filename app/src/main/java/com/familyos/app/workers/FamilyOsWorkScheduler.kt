@@ -6,14 +6,11 @@ import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import java.util.concurrent.TimeUnit
-import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * Schedules FamilyOS periodic background workers.
  */
-@Singleton
-class FamilyOsWorkScheduler @Inject constructor(
+class FamilyOsWorkScheduler(
     private val workManager: WorkManager,
 ) {
 

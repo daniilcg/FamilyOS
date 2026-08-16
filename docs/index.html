@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FamilyOS — семейная операционная система</title>
+  <meta name="description" content="FamilyOS — Android-приложение для семьи: покупки, задачи, календарь, бюджет, документы, чат и Family AI. Разработчик SEGAL COMMUNICATIONS." />
+  <link rel="icon" href="logo.svg" type="image/svg+xml" />
+  <style>
+    :root {
+      --blue: #2563EB;
+      --indigo: #4F46E5;
+      --ink: #0F172A;
+      --muted: #475569;
+      --line: #E2E8F0;
+      --bg: #F8FAFC;
+      --card: #FFFFFF;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+      line-height: 1.55;
+    }
+    a { color: var(--blue); }
+    header {
+      position: sticky; top: 0; z-index: 10;
+      background: rgba(248,250,252,.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--line);
+    }
+    .bar {
+      max-width: 1080px; margin: 0 auto; padding: 14px 20px;
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: inherit; font-weight: 700; }
+    .brand img { width: 40px; height: 40px; border-radius: 10px; }
+    .lang { display: flex; gap: 6px; }
+    .lang button {
+      border: 1px solid var(--line); background: #fff; border-radius: 999px;
+      padding: 6px 12px; cursor: pointer; font-weight: 600; color: var(--muted);
+    }
+    .lang button[aria-pressed="true"] { background: var(--ink); color: #fff; border-color: var(--ink); }
+    .hero {
+      max-width: 1080px; margin: 0 auto; padding: 56px 20px 32px;
+      display: grid; grid-template-columns: 1.15fr .85fr; gap: 40px; align-items: center;
+    }
+    .kicker { color: var(--blue); font-weight: 700; letter-spacing: .04em; text-transform: uppercase; font-size: 13px; }
+    h1 { font-size: clamp(32px, 5vw, 52px); line-height: 1.1; margin: 10px 0 16px; }
+    .lead { font-size: 18px; color: var(--muted); max-width: 560px; }
+    .cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 14px 22px; border-radius: 12px; font-weight: 700; text-decoration: none;
+    }
+    .btn-primary { background: var(--blue); color: #fff; }
+    .btn-primary:hover { background: #1D4ED8; }
+    .btn-ghost { background: #fff; color: var(--ink); border: 1px solid var(--line); }
+    .phone {
+      background: linear-gradient(160deg, var(--blue), var(--indigo));
+      border-radius: 28px; padding: 28px; color: #fff; min-height: 340px;
+      box-shadow: 0 24px 60px rgba(37,99,235,.28);
+    }
+    .phone h2 { font-size: 22px; margin: 12px 0 8px; }
+    .phone ul { list-style: none; display: grid; gap: 8px; opacity: .95; }
+    section { max-width: 1080px; margin: 0 auto; padding: 28px 20px; }
+    h3 { font-size: 26px; margin-bottom: 14px; }
+    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+    .card {
+      background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 18px;
+    }
+    .card strong { display: block; margin-bottom: 6px; }
+    .card p { color: var(--muted); font-size: 15px; }
+    table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 16px; overflow: hidden; }
+    th, td { text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--line); font-size: 15px; }
+    th { background: #EEF2FF; }
+    .note { color: var(--muted); font-size: 14px; margin-top: 10px; }
+    footer {
+      margin-top: 40px; padding: 28px 20px 40px; border-top: 1px solid var(--line);
+      text-align: center; color: var(--muted);
+    }
+    footer .dev { color: var(--ink); font-weight: 800; letter-spacing: .06em; margin-top: 6px; }
+    [data-lang="en"] { display: none; }
+    html[lang="en"] [data-lang="en"] { display: block; }
+    html[lang="en"] [data-lang="ru"] { display: none; }
+    html[lang="en"] span[data-lang="en"], html[lang="ru"] span[data-lang="ru"] { display: inline; }
+    @media (max-width: 860px) {
+      .hero, .grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="bar">
+      <a class="brand" href="#top">
+        <img src="logo.svg" alt="FamilyOS" />
+        FamilyOS
+      </a>
+      <div class="lang">
+        <button type="button" id="btn-ru" aria-pressed="true">RU</button>
+        <button type="button" id="btn-en" aria-pressed="false">EN</button>
+      </div>
+    </div>
+  </header>
+
+  <main id="top">
+    <div class="hero">
+      <div>
+        <p class="kicker">Android · offline-first</p>
+        <h1 data-lang="ru">Одна система для всей семьи</h1>
+        <h1 data-lang="en">One operating system for the whole family</h1>
+        <p class="lead" data-lang="ru">
+          FamilyOS заменяет разрозненные списки, календарь, чат и заметки.
+          Покупки, задачи, бюджет, документы и Family AI — в одном приложении, с офлайн-режимом по умолчанию.
+        </p>
+        <p class="lead" data-lang="en">
+          FamilyOS replaces scattered lists, calendars, chat, and notes.
+          Shopping, tasks, budget, documents, and Family AI — in one app, offline by default.
+        </p>
+        <div class="cta">
+          <a class="btn btn-primary" href="https://github.com/daniilcg/FamilyOS/releases/latest/download/FamilyOS-debug.apk">
+            <span data-lang="ru">Скачать приложение</span>
+            <span data-lang="en">Download the app</span>
+          </a>
+          <a class="btn btn-ghost" href="#features">
+            <span data-lang="ru">Возможности</span>
+            <span data-lang="en">Features</span>
+          </a>
+        </div>
+        <p class="note" data-lang="ru">Android 10+ · APK · установка из неизвестных источников должна быть разрешена.</p>
+        <p class="note" data-lang="en">Android 10+ · APK · allow installs from unknown sources.</p>
+      </div>
+      <aside class="phone">
+        <img src="logo.svg" alt="" width="56" height="56" style="border-radius:14px" />
+        <h2>FamilyOS</h2>
+        <ul data-lang="ru">
+          <li>Покупки, задачи, календарь</li>
+          <li>Бюджет и отчёты</li>
+          <li>Сейф документов AES-256</li>
+          <li>Семейный чат и уведомления</li>
+          <li>7 языков интерфейса</li>
+        </ul>
+        <ul data-lang="en">
+          <li>Shopping, tasks, calendar</li>
+          <li>Budget and reports</li>
+          <li>AES-256 document vault</li>
+          <li>Family chat and notifications</li>
+          <li>7 interface languages</li>
+        </ul>
+      </aside>
+    </div>
+
+    <section id="features">
+      <h3 data-lang="ru">Что внутри</h3>
+      <h3 data-lang="en">What’s inside</h3>
+      <div class="grid">
+        <article class="card"><strong data-lang="ru">Покупки</strong><strong data-lang="en">Shopping</strong><p data-lang="ru">Общий список, категории, архив и история покупок.</p><p data-lang="en">Shared list, categories, archive, and purchase history.</p></article>
+        <article class="card"><strong data-lang="ru">Задачи</strong><strong data-lang="en">Tasks</strong><p data-lang="ru">Статусы, приоритеты, дедлайны, чеклисты и назначения.</p><p data-lang="en">Statuses, priorities, deadlines, checklists, and assignees.</p></article>
+        <article class="card"><strong data-lang="ru">Календарь</strong><strong data-lang="en">Calendar</strong><p data-lang="ru">Месяц, неделя, день, повестка. Дни рождения, врачи, поездки.</p><p data-lang="en">Month, week, day, agenda. Birthdays, doctors, trips.</p></article>
+        <article class="card"><strong data-lang="ru">Бюджет</strong><strong data-lang="en">Budget</strong><p data-lang="ru">Доходы и расходы, категории, графики, месячный отчёт.</p><p data-lang="en">Income and expenses, categories, charts, monthly report.</p></article>
+        <article class="card"><strong data-lang="ru">Документы</strong><strong data-lang="en">Documents</strong><p data-lang="ru">PDF, DOCX, фото. Шифрование AES-256, PIN и биометрия.</p><p data-lang="en">PDF, DOCX, photos. AES-256 encryption, PIN and biometrics.</p></article>
+        <article class="card"><strong data-lang="ru">Заметки и чат</strong><strong data-lang="en">Notes & chat</strong><p data-lang="ru">Заметки с чеклистами, семейный чат, фото и голосовые.</p><p data-lang="en">Notes with checklists, family chat, photos and voice messages.</p></article>
+        <article class="card"><strong>Family AI</strong><p data-lang="ru">Списки из рецепта, набор задач к празднику, план бюджета. OpenAI, Gemini, OpenRouter.</p><p data-lang="en">Lists from a recipe, task sets for a party, budget plan. OpenAI, Gemini, OpenRouter.</p></article>
+        <article class="card"><strong>Premium</strong><p data-lang="ru">Google Play подписка или PayPal. Больше места, AI, экспорт PDF/Excel.</p><p data-lang="en">Google Play subscription or PayPal. More storage, AI, PDF/Excel export.</p></article>
+        <article class="card"><strong data-lang="ru">Семья</strong><strong data-lang="en">Family</strong><p data-lang="ru">Создание семьи, приглашение по коду и QR, роли участников.</p><p data-lang="en">Create a family, invite by code and QR, member roles.</p></article>
+      </div>
+    </section>
+
+    <section>
+      <h3 data-lang="ru">Языки</h3>
+      <h3 data-lang="en">Languages</h3>
+      <p class="lead" data-lang="ru">English, Русский, Srpski, Deutsch, Français, Español, Українська — переключение в Настройках.</p>
+      <p class="lead" data-lang="en">English, Русский, Srpski, Deutsch, Français, Español, Українська — switch in Settings.</p>
+    </section>
+
+    <section>
+      <h3 data-lang="ru">Тарифы</h3>
+      <h3 data-lang="en">Plans</h3>
+      <table>
+        <thead>
+          <tr>
+            <th></th>
+            <th>FREE</th>
+            <th>PREMIUM</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span data-lang="ru">Участники</span><span data-lang="en">Members</span></td>
+            <td>5</td>
+            <td><span data-lang="ru">Без лимита</span><span data-lang="en">Unlimited</span></td>
+          </tr>
+          <tr>
+            <td><span data-lang="ru">Семьи</span><span data-lang="en">Families</span></td>
+            <td>1</td>
+            <td><span data-lang="ru">Без лимита</span><span data-lang="en">Unlimited</span></td>
+          </tr>
+          <tr>
+            <td><span data-lang="ru">Файлы</span><span data-lang="en">Files</span></td>
+            <td>2 GB</td>
+            <td>50 GB</td>
+          </tr>
+          <tr>
+            <td>Family AI</td>
+            <td><span data-lang="ru">Нет</span><span data-lang="en">No</span></td>
+            <td><span data-lang="ru">Да</span><span data-lang="en">Yes</span></td>
+          </tr>
+          <tr>
+            <td><span data-lang="ru">Экспорт PDF / Excel</span><span data-lang="en">PDF / Excel export</span></td>
+            <td><span data-lang="ru">Нет</span><span data-lang="en">No</span></td>
+            <td><span data-lang="ru">Да</span><span data-lang="en">Yes</span></td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="note" data-lang="ru">Подписка Google Play: familyos_premium_monthly / familyos_premium_yearly. PayPal: paypal.me/segalcommic, код FAMILYOS-SEGAL-PREMIUM.</p>
+      <p class="note" data-lang="en">Google Play IDs: familyos_premium_monthly / familyos_premium_yearly. PayPal: paypal.me/segalcommic, code FAMILYOS-SEGAL-PREMIUM.</p>
+    </section>
+
+    <section>
+      <h3 data-lang="ru">Как установить</h3>
+      <h3 data-lang="en">How to install</h3>
+      <div class="card">
+        <p data-lang="ru">1. Нажмите «Скачать приложение». 2. Откройте APK на телефоне. 3. Разрешите установку из этого источника. 4. Запустите FamilyOS и создайте аккаунт.</p>
+        <p data-lang="en">1. Tap Download. 2. Open the APK on your phone. 3. Allow installs from this source. 4. Launch FamilyOS and create an account.</p>
+        <p class="note" data-lang="ru">Минимум Android 10. Данные хранятся на устройстве; облачная синхронизация — через Firebase, если настроена.</p>
+        <p class="note" data-lang="en">Requires Android 10+. Data stays on-device; cloud sync is optional via Firebase.</p>
+        <p style="margin-top:16px">
+          <a class="btn btn-primary" href="https://github.com/daniilcg/FamilyOS/releases/latest/download/FamilyOS-debug.apk">
+            <span data-lang="ru">Скачать FamilyOS APK</span>
+            <span data-lang="en">Download FamilyOS APK</span>
+          </a>
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <img src="logo.svg" alt="FamilyOS" width="48" height="48" style="border-radius:12px" />
+    <p>FamilyOS</p>
+    <p class="dev">SEGAL COMMUNICATIONS</p>
+    <p data-lang="ru">Разработчик приложения</p>
+    <p data-lang="en">App developer</p>
+  </footer>
+
+  <script>
+    const root = document.documentElement;
+    const ru = document.getElementById("btn-ru");
+    const en = document.getElementById("btn-en");
+    function setLang(lang) {
+      root.lang = lang;
+      ru.setAttribute("aria-pressed", String(lang === "ru"));
+      en.setAttribute("aria-pressed", String(lang === "en"));
+    }
+    ru.onclick = () => setLang("ru");
+    en.onclick = () => setLang("en");
+  </script>
+</body>
+</html>

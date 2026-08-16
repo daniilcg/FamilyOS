@@ -36,6 +36,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.familyos.core.domain.model.DocumentType
 import com.familyos.feature.documents.viewmodel.DocumentsUiState
+import com.familyos.core.ui.locale.rememberUiStrings
 
 /**
  * Picks a PDF/DOCX/image file and imports it into the encrypted vault.
@@ -49,6 +50,8 @@ fun ImportDocumentScreen(
     onConsumedSuccess: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val s = rememberUiStrings()
+
     val context = LocalContext.current
     var title by remember { mutableStateOf("") }
     var type by remember { mutableStateOf(DocumentType.OTHER) }
@@ -79,10 +82,10 @@ fun ImportDocumentScreen(
         modifier = modifier,
         topBar = {
             TopAppBar(
-                title = { Text("Import document") },
+                title = { Text(s.importDocument) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = s.back)
                     }
                 },
             )
@@ -111,18 +114,18 @@ fun ImportDocumentScreen(
                 },
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text(if (selectedName == null) "Choose PDF / DOCX / Image" else "Change file ($selectedName)")
+                Text(if (selectedName == null) s.chooseFile else s.changeFile.format(selectedName))
             }
 
             OutlinedTextField(
                 value = title,
                 onValueChange = { title = it },
-                label = { Text("Title") },
+                label = { Text(s.title) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
             )
 
-            Text("Type")
+            Text(s.type)
             Row(
                 modifier = Modifier.horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -139,7 +142,7 @@ fun ImportDocumentScreen(
             OutlinedTextField(
                 value = tagsText,
                 onValueChange = { tagsText = it },
-                label = { Text("Tags (comma separated)") },
+                label = { Text(s.tagsComma) },
                 modifier = Modifier.fillMaxWidth(),
             )
 
@@ -160,7 +163,7 @@ fun ImportDocumentScreen(
                 enabled = pendingBytes != null && title.isNotBlank() && !state.isLoading,
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text(if (state.isLoading) "Encrypting…" else "Import with AES-256")
+                Text(if (state.isLoading) s.encrypting else s.importAes)
             }
 
             state.errorMessage?.let { Text(it, color = androidx.compose.material3.MaterialTheme.colorScheme.error) }

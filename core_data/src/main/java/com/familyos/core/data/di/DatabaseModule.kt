@@ -35,7 +35,8 @@ object DatabaseModule {
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): FamilyOsDatabase =
         Room.databaseBuilder(context, FamilyOsDatabase::class.java, "familyos.db")
-            .fallbackToDestructiveMigration()
+            .fallbackToDestructiveMigration(dropAllTables = true)
+            .fallbackToDestructiveMigrationOnDowngrade(dropAllTables = true)
             .build()
 
     @Provides fun provideUserDao(db: FamilyOsDatabase): UserDao = db.userDao()

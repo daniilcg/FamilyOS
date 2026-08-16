@@ -36,6 +36,9 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 import com.familyos.feature.documents.viewmodel.DocumentsUiState
+import com.familyos.core.ui.locale.rememberUiStrings
+import com.familyos.core.locale.AppLocale
+import com.familyos.core.locale.UiStringsCatalog
 
 /**
  * PIN + biometric lock screen shown before vault access.
@@ -52,6 +55,7 @@ fun DocumentLockScreen(
     val context = LocalContext.current
     var pin by remember { mutableStateOf("") }
     var confirmPin by remember { mutableStateOf("") }
+    val s = rememberUiStrings()
 
     Column(
         modifier = modifier
@@ -63,12 +67,12 @@ fun DocumentLockScreen(
         Icon(Icons.Default.Lock, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
         Spacer(Modifier.height(16.dp))
         Text(
-            text = if (state.pinConfigured) "Unlock Documents Vault" else "Set Vault PIN",
+            text = if (state.pinConfigured) s.unlockVaultTitle else s.setVaultPinTitle,
             style = MaterialTheme.typography.headlineMedium,
         )
         Spacer(Modifier.height(8.dp))
         Text(
-            text = "AES-256 encrypted family documents require PIN or biometric unlock.",
+            text = s.vaultSubtitle,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
         )
@@ -77,7 +81,7 @@ fun DocumentLockScreen(
         OutlinedTextField(
             value = pin,
             onValueChange = { if (it.length <= 12) pin = it.filter { c -> c.isDigit() } },
-            label = { Text("PIN") },
+            label = { Text(s.pinLabel) },
             visualTransformation = PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
             modifier = Modifier.fillMaxWidth(),
@@ -89,7 +93,7 @@ fun DocumentLockScreen(
             OutlinedTextField(
                 value = confirmPin,
                 onValueChange = { if (it.length <= 12) confirmPin = it.filter { c -> c.isDigit() } },
-                label = { Text("Confirm PIN") },
+                label = { Text(s.confirmPin) },
                 visualTransformation = PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
                 modifier = Modifier.fillMaxWidth(),
@@ -99,16 +103,16 @@ fun DocumentLockScreen(
             Button(
                 onClick = {
                     if (pin.length < 4) {
-                        Toast.makeText(context, "PIN must be at least 4 digits", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, s.pinTooShort, Toast.LENGTH_SHORT).show()
                     } else if (pin != confirmPin) {
-                        Toast.makeText(context, "PINs do not match", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, s.pinsDoNotMatch, Toast.LENGTH_SHORT).show()
                     } else {
                         onSetupPin(pin)
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text("Create PIN")
+                Text(s.createPin)
             }
         } else {
             Spacer(Modifier.height(16.dp))
@@ -117,7 +121,7 @@ fun DocumentLockScreen(
                 modifier = Modifier.fillMaxWidth(),
                 enabled = pin.length >= 4,
             ) {
-                Text("Unlock")
+                Text(s.unlock)
             }
             Spacer(Modifier.height(8.dp))
             TextButton(
@@ -132,7 +136,7 @@ fun DocumentLockScreen(
             ) {
                 Icon(Icons.Default.Fingerprint, contentDescription = null)
                 Spacer(Modifier.height(0.dp))
-                Text("  Use Biometric")
+                Text("  ${s.useBiometric}")
             }
             Spacer(Modifier.height(16.dp))
             RowToggle(
@@ -150,11 +154,12 @@ fun DocumentLockScreen(
 
 @Composable
 private fun RowToggle(checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+    val s = rememberUiStrings()
     androidx.compose.foundation.layout.Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Text("Enable biometric unlock")
+        Text(s.enableBiometricUnlock)
         Switch(checked = checked, onCheckedChange = onCheckedChange)
     }
 }
@@ -171,9 +176,10 @@ private fun launchBiometric(
     onSuccess: () -> Unit,
     onError: (String) -> Unit,
 ) {
+    val strings = UiStringsCatalog.forLang(AppLocale.currentLanguage())
     val activity = context as? FragmentActivity
     if (activity == null) {
-        onError("Biometric requires FragmentActivity host")
+        onError(strings.biometricHostError)
         return
     }
     val executor = ContextCompat.getMainExecutor(context)
@@ -190,13 +196,13 @@ private fun launchBiometric(
             }
 
             override fun onAuthenticationFailed() {
-                onError("Biometric authentication failed")
+                onError(strings.biometricFailed)
             }
         },
     )
     val info = BiometricPrompt.PromptInfo.Builder()
-        .setTitle("Unlock Documents")
-        .setSubtitle("Use fingerprint or face unlock")
+        .setTitle(strings.unlockVaultTitle)
+        .setSubtitle(strings.biometricSubtitle)
         .setAllowedAuthenticators(
             BiometricManager.Authenticators.BIOMETRIC_STRONG or
                 BiometricManager.Authenticators.DEVICE_CREDENTIAL,

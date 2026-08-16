@@ -49,6 +49,7 @@ import com.familyos.core.domain.model.FamilyRole
 import com.familyos.core.ui.components.FamilyEmptyState
 import com.familyos.core.ui.components.FamilyLoading
 import com.familyos.feature.family.FamilyViewModel
+import com.familyos.core.ui.locale.rememberUiStrings
 
 /**
  * Lists family members with Owner/Admin role management controls.
@@ -61,6 +62,7 @@ fun FamilyMembersScreen(
     viewModel: FamilyViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val s = rememberUiStrings()
     val snackbar = remember { SnackbarHostState() }
 
     LaunchedEffect(state.errorMessage, state.infoMessage) {
@@ -77,15 +79,15 @@ fun FamilyMembersScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(state.family?.name ?: "Members") },
+                title = { Text(state.family?.name ?: s.membersTitle) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = s.back)
                     }
                 },
                 actions = {
                     TextButton(onClick = onNavigateToInvite) {
-                        Text("Invite")
+                        Text(s.invite)
                     }
                 },
             )
@@ -97,7 +99,7 @@ fun FamilyMembersScreen(
                 FamilyLoading()
             }
             state.family == null -> {
-                FamilyEmptyState(message = "You are not in a family yet. Create or join one first.")
+                FamilyEmptyState(message = s.notInFamilyYet)
             }
             else -> {
                 LazyColumn(
@@ -126,7 +128,7 @@ fun FamilyMembersScreen(
                                 .fillMaxWidth()
                                 .padding(horizontal = 16.dp),
                         ) {
-                            Text("Leave family", color = MaterialTheme.colorScheme.error)
+                            Text(s.leaveFamily, color = MaterialTheme.colorScheme.error)
                         }
                         Spacer(modifier = Modifier.height(24.dp))
                     }
@@ -143,6 +145,8 @@ private fun MemberRow(
     onRoleSelected: (FamilyRole) -> Unit,
     onRemove: () -> Unit,
 ) {
+    val s = rememberUiStrings()
+
     var menuExpanded by remember { mutableStateOf(false) }
     Row(
         modifier = Modifier
@@ -197,7 +201,7 @@ private fun MemberRow(
             IconButton(onClick = onRemove) {
                 Icon(
                     Icons.Outlined.Delete,
-                    contentDescription = "Remove member",
+                    contentDescription = s.removeMember,
                     tint = MaterialTheme.colorScheme.error,
                 )
             }

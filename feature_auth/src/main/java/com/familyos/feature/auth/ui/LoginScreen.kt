@@ -55,6 +55,7 @@ import com.familyos.feature.auth.AuthViewModel
 import com.familyos.feature.auth.google.GoogleSignInHelper
 import com.familyos.feature.auth.google.GoogleSignInResult
 import kotlinx.coroutines.launch
+import com.familyos.core.ui.locale.rememberUiStrings
 
 /**
  * Email / password and Google login screen with remember-me support.
@@ -68,6 +69,7 @@ fun LoginScreen(
     viewModel: AuthViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val s = rememberUiStrings()
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val focusManager = LocalFocusManager.current
@@ -121,18 +123,18 @@ fun LoginScreen(
             ) {
             Spacer(modifier = Modifier.height(24.dp))
             Text(
-                text = "FamilyOS",
+                text = s.appName,
                 style = MaterialTheme.typography.headlineLarge,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.primary,
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Welcome back",
+                text = s.welcomeBack,
                 style = MaterialTheme.typography.titleLarge,
             )
             Text(
-                text = "Sign in to continue organizing your family life.",
+                text = s.loginSubtitle,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
             )
@@ -142,7 +144,7 @@ fun LoginScreen(
                 value = state.email,
                 onValueChange = viewModel::onEmailChange,
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("Email") },
+                label = { Text(s.email) },
                 leadingIcon = { Icon(Icons.Outlined.Email, contentDescription = null) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(
@@ -156,7 +158,7 @@ fun LoginScreen(
                 value = state.password,
                 onValueChange = viewModel::onPasswordChange,
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("Password") },
+                label = { Text(s.password) },
                 leadingIcon = { Icon(Icons.Outlined.Lock, contentDescription = null) },
                 trailingIcon = {
                     IconButton(onClick = { passwordVisible = !passwordVisible }) {
@@ -167,9 +169,9 @@ fun LoginScreen(
                                 Icons.Outlined.Visibility
                             },
                             contentDescription = if (passwordVisible) {
-                                "Hide password"
+                                s.hidePassword
                             } else {
-                                "Show password"
+                                s.showPassword
                             },
                         )
                     }
@@ -204,13 +206,13 @@ fun LoginScreen(
                         onCheckedChange = viewModel::onRememberMeChange,
                         enabled = !state.isLoading,
                     )
-                    Text("Remember me")
+                    Text(s.rememberMe)
                 }
                 TextButton(
                     onClick = onNavigateToForgotPassword,
                     enabled = !state.isLoading,
                 ) {
-                    Text("Forgot password?")
+                    Text(s.forgotPassword)
                 }
             }
 
@@ -229,7 +231,7 @@ fun LoginScreen(
                         color = MaterialTheme.colorScheme.onPrimary,
                     )
                 } else {
-                    Text("Sign in")
+                    Text(s.signIn)
                 }
             }
             if (!firebaseMisconfigured) {
@@ -243,7 +245,7 @@ fun LoginScreen(
                         .height(52.dp),
                     enabled = !state.isLoading,
                 ) {
-                    Text("Continue with Google")
+                    Text(s.continueWithGoogle)
                 }
             }
             Spacer(modifier = Modifier.height(24.dp))
@@ -252,7 +254,7 @@ fun LoginScreen(
                 modifier = Modifier.align(Alignment.CenterHorizontally),
                 enabled = !state.isLoading,
             ) {
-                Text("Need an account? Sign up")
+                Text(s.needAccount)
             }
             Spacer(modifier = Modifier.height(24.dp))
             }

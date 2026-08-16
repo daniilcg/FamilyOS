@@ -1,9 +1,8 @@
 package com.familyos.app
 
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -18,16 +17,16 @@ import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
 /**
- * Single-activity Compose host with edge-to-edge system bars.
+ * Single-activity Compose host. Extends [AppCompatActivity] so
+ * [androidx.appcompat.app.AppCompatDelegate.setApplicationLocales] recreates UI correctly.
  */
 @AndroidEntryPoint
-class MainActivity : ComponentActivity() {
+class MainActivity : AppCompatActivity() {
 
     @Inject
     lateinit var googleSignInHelper: GoogleSignInHelper
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         setContent {
             val mainViewModel: MainViewModel = hiltViewModel()

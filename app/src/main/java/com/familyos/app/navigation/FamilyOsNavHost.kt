@@ -109,16 +109,25 @@ fun FamilyOsNavHost(
 ) {
     val navController = rememberNavController()
     val user by mainViewModel.currentUser.collectAsStateWithLifecycle()
-    val startDestination = if (user == null) AuthRoutes.GRAPH else HomeRoutes.HOME
 
     RequestCorePermissionsOnStart(enabled = user != null)
 
-    LaunchedEffect(user?.id) {
-        if (user == null) {
-            val route = navController.currentDestination?.route
-            if (route != null && route != AuthRoutes.LOGIN && !route.startsWith("auth")) {
-                navController.navigate(AuthRoutes.GRAPH) {
-                    popUpTo(0) { inclusive = true }
+    LaunchedEffect(user?.id, navController) {
+        navController.currentBackStackEntryFlow.collect { entry ->
+            val route = entry.destination.route ?: return@collect
+            runCatching {
+                if (user == null) {
+                    if (!route.startsWith("auth") && route != AuthRoutes.GRAPH) {
+                        navController.navigate(AuthRoutes.GRAPH) {
+                            popUpTo(navController.graph.id) { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    }
+                } else if (route.startsWith("auth") || route == AuthRoutes.GRAPH) {
+                    navController.navigate(HomeRoutes.HOME) {
+                        popUpTo(AuthRoutes.GRAPH) { inclusive = true }
+                        launchSingleTop = true
+                    }
                 }
             }
         }
@@ -176,7 +185,7 @@ fun FamilyOsNavHost(
     ) { padding ->
         NavHost(
             navController = navController,
-            startDestination = startDestination,
+            startDestination = AuthRoutes.GRAPH,
             modifier = Modifier.padding(padding),
         ) {
             authNavGraph(

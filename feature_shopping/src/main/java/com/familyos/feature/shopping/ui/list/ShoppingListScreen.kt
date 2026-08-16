@@ -53,6 +53,7 @@ import com.familyos.feature.shopping.util.label
 import com.familyos.feature.shopping.viewmodel.ShoppingEvent
 import com.familyos.feature.shopping.viewmodel.ShoppingUiState
 import com.familyos.feature.shopping.viewmodel.ShoppingViewModel
+import com.familyos.core.ui.locale.rememberUiStrings
 
 /**
  * Active shopping list with search, category filter, sort, and category grouping.
@@ -67,6 +68,7 @@ fun ShoppingListScreen(
     viewModel: ShoppingViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val s = rememberUiStrings()
     val snackbar = remember { SnackbarHostState() }
 
     LaunchedEffect(Unit) {
@@ -116,6 +118,8 @@ internal fun ShoppingListContent(
     onBack: (() -> Unit)?,
     onClearError: () -> Unit,
 ) {
+    val s = rememberUiStrings()
+
     var sortMenuExpanded by remember { mutableStateOf(false) }
 
     LaunchedEffect(state.errorMessage) {
@@ -127,34 +131,34 @@ internal fun ShoppingListContent(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Shopping") },
+                title = { Text(s.shoppingTitle) },
                 navigationIcon = {
                     if (onBack != null) {
                         IconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = s.back)
                         }
                     }
                 },
                 actions = {
                     IconButton(onClick = onHistoryClick) {
-                        Icon(Icons.Outlined.History, contentDescription = "History")
+                        Icon(Icons.Outlined.History, contentDescription = s.history)
                     }
                     IconButton(onClick = onArchiveClick) {
-                        Icon(Icons.Outlined.Archive, contentDescription = "Archive")
+                        Icon(Icons.Outlined.Archive, contentDescription = s.archive)
                     }
                 },
             )
         },
         floatingActionButton = {
             FloatingActionButton(onClick = onAddClick) {
-                Icon(Icons.Filled.Add, contentDescription = "Add item")
+                Icon(Icons.Filled.Add, contentDescription = s.addItemCd)
             }
         },
         snackbarHost = { SnackbarHost(snackbar) },
     ) { padding ->
         when {
             state.isLoading && state.items.isEmpty() -> FamilyLoading()
-            state.familyId.isNullOrBlank() -> FamilyEmptyState(message = "Join or create a family to start a shopping list.")
+            state.familyId.isNullOrBlank() -> FamilyEmptyState(message = s.joinFamilyForShopping)
             else -> Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -167,8 +171,8 @@ internal fun ShoppingListContent(
                     onValueChange = onQueryChange,
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    label = { Text("Search") },
-                    placeholder = { Text("Milk, soap, …") },
+                    label = { Text(s.search) },
+                    placeholder = { Text(s.shoppingSearchHint) },
                 )
                 Row(
                     modifier = Modifier
@@ -179,7 +183,7 @@ internal fun ShoppingListContent(
                     FilterChip(
                         selected = state.categoryFilter == null,
                         onClick = { onCategoryFilter(null) },
-                        label = { Text("All") },
+                        label = { Text(s.all) },
                     )
                     ShoppingUiCategories.forEach { category ->
                         FilterChip(
@@ -198,7 +202,7 @@ internal fun ShoppingListContent(
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     TextButton(onClick = { sortMenuExpanded = true }) {
-                        Text("Sort: ${state.sort.label()}")
+                        Text("${s.sortPrefix}: ${state.sort.label()}")
                     }
                     DropdownMenu(expanded = sortMenuExpanded, onDismissRequest = { sortMenuExpanded = false }) {
                         ShoppingSort.entries.forEach { option ->
@@ -214,11 +218,11 @@ internal fun ShoppingListContent(
                     FilterChip(
                         selected = state.groupByCategory,
                         onClick = { onGroupByCategoryChange(!state.groupByCategory) },
-                        label = { Text("Group") },
+                        label = { Text(s.group) },
                     )
                 }
                 if (state.items.isEmpty()) {
-                    FamilyEmptyState(message = "No items yet. Tap + to add one.")
+                    FamilyEmptyState(message = s.noItemsYet)
                 } else if (state.groupByCategory && state.grouped.isNotEmpty()) {
                     LazyColumn(
                         contentPadding = PaddingValues(bottom = 88.dp),

@@ -45,6 +45,7 @@ import com.familyos.feature.shopping.util.label
 import com.familyos.feature.shopping.viewmodel.AddEditShoppingEvent
 import com.familyos.feature.shopping.viewmodel.AddEditShoppingUiState
 import com.familyos.feature.shopping.viewmodel.AddEditShoppingViewModel
+import com.familyos.core.ui.locale.rememberUiStrings
 
 /**
  * Create or edit a shopping item.
@@ -56,6 +57,7 @@ fun AddEditShoppingScreen(
     viewModel: AddEditShoppingViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val s = rememberUiStrings()
     val snackbar = remember { SnackbarHostState() }
 
     LaunchedEffect(Unit) {
@@ -96,6 +98,8 @@ internal fun AddEditShoppingContent(
     onSave: () -> Unit,
     onBack: () -> Unit,
 ) {
+    val s = rememberUiStrings()
+
     var categoryExpanded by remember { mutableStateOf(false) }
 
     LaunchedEffect(state.errorMessage) {
@@ -106,10 +110,10 @@ internal fun AddEditShoppingContent(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (state.isEdit) "Edit item" else "Add item") },
+                title = { Text(if (state.isEdit) s.editItem else s.addItem) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = s.back)
                     }
                 },
             )
@@ -131,22 +135,22 @@ internal fun AddEditShoppingContent(
                     value = state.name,
                     onValueChange = onNameChange,
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Name") },
+                    label = { Text(s.name) },
                     singleLine = true,
                 )
                 OutlinedTextField(
                     value = state.quantity,
                     onValueChange = onQuantityChange,
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Quantity") },
+                    label = { Text(s.quantity) },
                     singleLine = true,
                 )
                 OutlinedTextField(
                     value = state.unit,
                     onValueChange = onUnitChange,
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Unit") },
-                    placeholder = { Text("kg, pcs, L…") },
+                    label = { Text(s.unit) },
+                    placeholder = { Text(s.unitHint) },
                     singleLine = true,
                 )
                 ExposedDropdownMenuBox(
@@ -157,7 +161,7 @@ internal fun AddEditShoppingContent(
                         value = state.category.label(),
                         onValueChange = {},
                         readOnly = true,
-                        label = { Text("Category") },
+                        label = { Text(s.category) },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(categoryExpanded) },
                         modifier = Modifier
                             .menuAnchor(MenuAnchorType.PrimaryNotEditable)
@@ -182,28 +186,28 @@ internal fun AddEditShoppingContent(
                     value = state.comment,
                     onValueChange = onCommentChange,
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Comment") },
+                    label = { Text(s.comment) },
                     minLines = 2,
                 )
                 OutlinedTextField(
                     value = state.price,
                     onValueChange = onPriceChange,
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Price") },
+                    label = { Text(s.price) },
                     singleLine = true,
                 )
                 OutlinedTextField(
                     value = state.photoUri,
                     onValueChange = onPhotoUriChange,
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Photo URI") },
-                    placeholder = { Text("content:// or https://…") },
+                    label = { Text(s.photoUri) },
+                    placeholder = { Text(s.photoUriHint) },
                     singleLine = true,
                 )
                 if (state.photoUri.isNotBlank()) {
                     AsyncImage(
                         model = state.photoUri,
-                        contentDescription = "Preview",
+                        contentDescription = s.preview,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(180.dp),
@@ -215,7 +219,7 @@ internal fun AddEditShoppingContent(
                     enabled = !state.isSaving,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Text(if (state.isSaving) "Saving…" else "Save")
+                    Text(if (state.isSaving) s.saving else s.save)
                 }
             }
         }

@@ -40,6 +40,7 @@ import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 import com.google.accompanist.permissions.shouldShowRationale
+import com.familyos.core.ui.locale.rememberUiStrings
 
 /**
  * Join an existing family via invite code or QR scan (CameraX + ZXing).
@@ -52,6 +53,7 @@ fun JoinFamilyScreen(
     viewModel: FamilyViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val s = rememberUiStrings()
     val snackbar = remember { SnackbarHostState() }
     var showScanner by remember { mutableStateOf(false) }
     val cameraPermission = rememberPermissionState(Manifest.permission.CAMERA)
@@ -75,10 +77,10 @@ fun JoinFamilyScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Join family") },
+                title = { Text(s.joinFamily) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = s.back)
                     }
                 },
             )
@@ -92,11 +94,11 @@ fun JoinFamilyScreen(
                 .padding(24.dp),
         ) {
             Text(
-                text = "Enter invite code",
+                text = s.enterInviteCode,
                 style = MaterialTheme.typography.titleLarge,
             )
             Text(
-                text = "Ask a family owner or admin for the code, or scan their QR invite.",
+                text = s.joinFamilyBody,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
             )
@@ -105,7 +107,7 @@ fun JoinFamilyScreen(
                 value = state.inviteCodeInput,
                 onValueChange = viewModel::onInviteCodeInputChange,
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("Invite code") },
+                label = { Text(s.inviteCode) },
                 singleLine = true,
                 enabled = !state.isLoading,
             )
@@ -124,7 +126,7 @@ fun JoinFamilyScreen(
                         color = MaterialTheme.colorScheme.onPrimary,
                     )
                 } else {
-                    Text("Join with code")
+                    Text(s.joinWithCode)
                 }
             }
             Spacer(modifier = Modifier.height(12.dp))
@@ -140,12 +142,12 @@ fun JoinFamilyScreen(
             ) {
                 Icon(Icons.Outlined.QrCodeScanner, contentDescription = null)
                 Spacer(modifier = Modifier.padding(4.dp))
-                Text(if (showScanner) "Hide scanner" else "Scan QR code")
+                Text(if (showScanner) s.hideScanner else s.scanQr)
             }
 
             if (!cameraPermission.status.isGranted && cameraPermission.status.shouldShowRationale) {
                 Text(
-                    text = "Camera permission is required to scan invite QR codes.",
+                    text = s.cameraPermissionQr,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.error,
                 )

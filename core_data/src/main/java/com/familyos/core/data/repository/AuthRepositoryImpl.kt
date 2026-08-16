@@ -21,6 +21,8 @@ import com.google.firebase.auth.UserProfileChangeRequest
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.tasks.await
 import kotlinx.serialization.encodeToString
@@ -62,9 +64,12 @@ class AuthRepositoryImpl @Inject constructor(
         }
         auth.addAuthStateListener(listener)
         awaitClose { auth.removeAuthStateListener(listener) }
-    }.map { base ->
-        if (base == null) null
-        else userDao.getById(base.id)?.toDomain() ?: base
+    }.flatMapLatest { base ->
+        if (base == null) {
+            flowOf(null)
+        } else {
+            userDao.observeById(base.id).map { entity -> entity?.toDomain() ?: base }
+        }
     }
 
     override suspend fun getCurrentUser(): User? {

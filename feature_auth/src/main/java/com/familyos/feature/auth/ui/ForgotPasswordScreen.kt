@@ -38,6 +38,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.familyos.feature.auth.AuthEvent
 import com.familyos.feature.auth.AuthViewModel
+import com.familyos.core.ui.locale.rememberUiStrings
 
 /**
  * Password reset screen — email link in cloud mode, new password fields in local mode.
@@ -51,12 +52,13 @@ fun ForgotPasswordScreen(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
     val isLocal = state.isLocalAuthMode
+    val s = rememberUiStrings()
 
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
             if (event is AuthEvent.PasswordResetSent) {
                 snackbar.showSnackbar(
-                    if (isLocal) "Пароль обновлён" else "Письмо для сброса отправлено",
+                    if (isLocal) s.passwordUpdated else s.resetEmailSent,
                 )
             }
         }
@@ -76,10 +78,10 @@ fun ForgotPasswordScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (isLocal) "Новый пароль" else "Сброс пароля") },
+                title = { Text(if (isLocal) s.forgotTitleLocal else s.forgotTitleCloud) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = s.back)
                     }
                 },
             )
@@ -95,11 +97,7 @@ fun ForgotPasswordScreen(
         ) {
             Spacer(modifier = Modifier.height(12.dp))
             Text(
-                text = if (isLocal) {
-                    "Введите email аккаунта и новый пароль. Данные хранятся только на этом устройстве."
-                } else {
-                    "Введите email — мы отправим ссылку для сброса пароля."
-                },
+                text = if (isLocal) s.forgotBodyLocal else s.forgotBodyCloud,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
             )
@@ -108,7 +106,7 @@ fun ForgotPasswordScreen(
                 value = state.email,
                 onValueChange = viewModel::onEmailChange,
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("Email") },
+                label = { Text(s.email) },
                 leadingIcon = { Icon(Icons.Outlined.Email, contentDescription = null) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(
@@ -123,7 +121,7 @@ fun ForgotPasswordScreen(
                     value = state.password,
                     onValueChange = viewModel::onPasswordChange,
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Новый пароль") },
+                    label = { Text(s.newPassword) },
                     leadingIcon = { Icon(Icons.Outlined.Lock, contentDescription = null) },
                     visualTransformation = PasswordVisualTransformation(),
                     singleLine = true,
@@ -138,7 +136,7 @@ fun ForgotPasswordScreen(
                     value = state.confirmPassword,
                     onValueChange = viewModel::onConfirmPasswordChange,
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Подтвердите пароль") },
+                    label = { Text(s.confirmPassword) },
                     leadingIcon = { Icon(Icons.Outlined.Lock, contentDescription = null) },
                     visualTransformation = PasswordVisualTransformation(),
                     singleLine = true,
@@ -164,7 +162,7 @@ fun ForgotPasswordScreen(
                         color = MaterialTheme.colorScheme.onPrimary,
                     )
                 } else {
-                    Text(if (isLocal) "Сохранить пароль" else "Отправить ссылку")
+                    Text(if (isLocal) s.savePassword else s.sendResetLink)
                 }
             }
         }

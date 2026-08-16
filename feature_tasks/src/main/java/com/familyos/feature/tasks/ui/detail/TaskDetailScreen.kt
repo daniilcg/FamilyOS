@@ -42,6 +42,7 @@ import com.familyos.feature.tasks.util.formatTaskEpoch
 import com.familyos.feature.tasks.util.label
 import com.familyos.feature.tasks.viewmodel.TaskEditorEvent
 import com.familyos.feature.tasks.viewmodel.TaskEditorViewModel
+import com.familyos.core.ui.locale.rememberUiStrings
 
 /**
  * Read-focused task detail with quick status actions.
@@ -54,6 +55,7 @@ fun TaskDetailScreen(
     viewModel: TaskEditorViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val s = rememberUiStrings()
     val snackbar = remember { SnackbarHostState() }
 
     LaunchedEffect(Unit) {
@@ -68,20 +70,20 @@ fun TaskDetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Task") },
+                title = { Text(s.taskTitle) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = s.back)
                     }
                 },
                 actions = {
                     state.taskId?.let { id ->
                         IconButton(onClick = { onEdit(id) }) {
-                            Icon(Icons.Outlined.Edit, contentDescription = "Edit")
+                            Icon(Icons.Outlined.Edit, contentDescription = s.edit)
                         }
                     }
                     IconButton(onClick = viewModel::delete) {
-                        Icon(Icons.Outlined.Delete, contentDescription = "Delete")
+                        Icon(Icons.Outlined.Delete, contentDescription = s.delete)
                     }
                 },
             )
@@ -101,29 +103,29 @@ fun TaskDetailScreen(
             ) {
                 Text(state.title, style = MaterialTheme.typography.headlineMedium)
                 if (state.isOverdue) {
-                    Text("Overdue", color = FamilyDanger, style = MaterialTheme.typography.labelLarge)
+                    Text(s.overdue, color = FamilyDanger, style = MaterialTheme.typography.labelLarge)
                 }
                 Text(
                     "${state.status.label()} · ${state.priority.label()}",
                     style = MaterialTheme.typography.bodyLarge,
                 )
-                Text("Start: ${formatTaskEpoch(state.startAt)}")
-                Text("Deadline: ${formatTaskEpoch(state.deadline)}")
-                val assignee = state.members.firstOrNull { it.userId == state.assigneeId }?.displayName ?: "Unassigned"
-                Text("Assignee: $assignee")
+                Text("${s.startLabel}: ${formatTaskEpoch(state.startAt)}")
+                Text("${s.deadlineLabel}: ${formatTaskEpoch(state.deadline)}")
+                val assignee = state.members.firstOrNull { it.userId == state.assigneeId }?.displayName ?: s.unassigned
+                Text("${s.assigneeLabel}: $assignee")
                 if (state.description.isNotBlank()) {
                     Text(state.description, style = MaterialTheme.typography.bodyMedium)
                 }
                 if (state.photoUri.isNotBlank()) {
                     AsyncImage(
                         model = state.photoUri,
-                        contentDescription = "Task photo",
+                        contentDescription = s.taskPhotoCd,
                         modifier = Modifier.fillMaxWidth().height(180.dp),
                         contentScale = ContentScale.Crop,
                     )
                 }
                 if (state.checklist.isNotEmpty()) {
-                    Text("Checklist", style = MaterialTheme.typography.titleMedium)
+                    Text(s.checklist, style = MaterialTheme.typography.titleMedium)
                     state.checklist.forEach { row ->
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Checkbox(checked = row.isChecked, onCheckedChange = { viewModel.toggleChecklistItem(row.id) })
@@ -132,16 +134,16 @@ fun TaskDetailScreen(
                     }
                 }
                 if (state.attachmentsText.isNotBlank()) {
-                    Text("Attachments: ${state.attachmentsText}")
+                    Text("${s.attachmentsLabel}: ${state.attachmentsText}")
                 }
                 if (state.recurrenceEnabled) {
-                    Text("Repeats ${state.recurrenceFrequency.label()} every ${state.recurrenceInterval}")
+                    Text(s.repeatsEvery.format(state.recurrenceFrequency.label(), state.recurrenceInterval))
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    AssistChip(onClick = { viewModel.applyStatus(TaskStatus.IN_PROGRESS) }, label = { Text("Start") })
-                    AssistChip(onClick = { viewModel.applyStatus(TaskStatus.WAITING) }, label = { Text("Waiting") })
-                    AssistChip(onClick = { viewModel.applyStatus(TaskStatus.DONE) }, label = { Text("Done") })
-                    AssistChip(onClick = { viewModel.applyStatus(TaskStatus.CANCELLED) }, label = { Text("Cancel") })
+                    AssistChip(onClick = { viewModel.applyStatus(TaskStatus.IN_PROGRESS) }, label = { Text(s.startAction) })
+                    AssistChip(onClick = { viewModel.applyStatus(TaskStatus.WAITING) }, label = { Text(s.waiting) })
+                    AssistChip(onClick = { viewModel.applyStatus(TaskStatus.DONE) }, label = { Text(s.done) })
+                    AssistChip(onClick = { viewModel.applyStatus(TaskStatus.CANCELLED) }, label = { Text(s.cancel) })
                 }
             }
         }

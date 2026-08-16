@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_title">Paramètres</string>
+    <string name="settings_appearance">Apparence</string>
+    <string name="settings_theme_light">Clair</string>
+    <string name="settings_theme_dark">Sombre</string>
+    <string name="settings_theme_system">Système</string>
+    <string name="settings_notifications">Notifications</string>
+    <string name="settings_security">Sécurité</string>
+    <string name="settings_biometric">Verrouillage biométrique</string>
+    <string name="settings_biometric_sub">Exiger l’empreinte ou Face ID à l’ouverture</string>
+    <string name="settings_language">Langue</string>
+    <string name="settings_ai_provider">Fournisseur IA</string>
+    <string name="settings_edit_profile">Modifier le profil</string>
+    <string name="settings_logout">Se déconnecter</string>
+    <string name="settings_back">Retour</string>
+</resources>

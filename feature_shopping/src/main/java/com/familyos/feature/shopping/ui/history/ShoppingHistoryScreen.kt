@@ -30,6 +30,7 @@ import com.familyos.core.ui.components.FamilyLoading
 import com.familyos.feature.shopping.ui.components.ShoppingItemRow
 import com.familyos.feature.shopping.viewmodel.ShoppingEvent
 import com.familyos.feature.shopping.viewmodel.ShoppingViewModel
+import com.familyos.core.ui.locale.rememberUiStrings
 
 /**
  * History of purchased shopping items with restore / archive / delete actions.
@@ -42,6 +43,7 @@ fun ShoppingHistoryScreen(
     viewModel: ShoppingViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val s = rememberUiStrings()
     val snackbar = remember { SnackbarHostState() }
 
     LaunchedEffect(Unit) {
@@ -56,10 +58,10 @@ fun ShoppingHistoryScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Purchase history") },
+                title = { Text(s.purchaseHistory) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = s.back)
                     }
                 },
             )
@@ -68,7 +70,7 @@ fun ShoppingHistoryScreen(
     ) { padding ->
         when {
             state.isLoading && state.items.isEmpty() -> FamilyLoading()
-            state.items.isEmpty() -> FamilyEmptyState(message = "No purchased items yet.")
+            state.items.isEmpty() -> FamilyEmptyState(message = s.noPurchasedYet)
             else -> LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()

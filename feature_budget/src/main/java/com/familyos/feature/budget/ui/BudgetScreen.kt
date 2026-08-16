@@ -54,6 +54,7 @@ import com.familyos.feature.budget.viewmodel.BudgetEvent
 import com.familyos.feature.budget.viewmodel.BudgetUiState
 import com.familyos.feature.budget.viewmodel.BudgetViewModel
 import java.time.ZoneId
+import com.familyos.core.ui.locale.rememberUiStrings
 
 /**
  * Budget home with balance, monthly transactions, and category bars.
@@ -67,6 +68,7 @@ fun BudgetScreen(
     viewModel: BudgetViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val s = rememberUiStrings()
     val snackbar = remember { SnackbarHostState() }
     LaunchedEffect(Unit) {
         viewModel.events.collect { if (it is BudgetEvent.Message) snackbar.showSnackbar(it.text) }
@@ -99,6 +101,8 @@ internal fun BudgetContent(
     onBack: (() -> Unit)?,
     onClearError: () -> Unit,
 ) {
+    val s = rememberUiStrings()
+
     LaunchedEffect(state.errorMessage) {
         state.errorMessage?.let {
             snackbar.showSnackbar(it)
@@ -108,30 +112,30 @@ internal fun BudgetContent(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Budget") },
+                title = { Text(s.budgetTitle) },
                 navigationIcon = {
                     if (onBack != null) {
                         IconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = s.back)
                         }
                     }
                 },
                 actions = {
                     IconButton(onClick = onReportClick) {
-                        Icon(Icons.Outlined.Assessment, contentDescription = "Report")
+                        Icon(Icons.Outlined.Assessment, contentDescription = s.report)
                     }
                     IconButton(onClick = { onShiftMonth(false) }) {
-                        Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = "Previous month")
+                        Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = s.previousMonth)
                     }
                     IconButton(onClick = { onShiftMonth(true) }) {
-                        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = "Next month")
+                        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = s.nextMonth)
                     }
                 },
             )
         },
         floatingActionButton = {
             FloatingActionButton(onClick = onAddClick) {
-                Icon(Icons.Filled.Add, contentDescription = "Add transaction")
+                Icon(Icons.Filled.Add, contentDescription = s.addTransactionCd)
             }
         },
         snackbarHost = { SnackbarHost(snackbar) },
@@ -139,7 +143,7 @@ internal fun BudgetContent(
         when {
             state.isLoading && state.transactions.isEmpty() && state.summary == null ->
                 FamilyLoading()
-            state.familyId.isNullOrBlank() -> FamilyEmptyState(message = "Join a family to track shared finances.")
+            state.familyId.isNullOrBlank() -> FamilyEmptyState(message = s.joinFamilyForBudget)
             else -> LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
@@ -158,14 +162,14 @@ internal fun BudgetContent(
                     val summary = state.summary
                     Card(modifier = Modifier.fillMaxWidth()) {
                         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text("Balance", style = MaterialTheme.typography.labelLarge)
+                            Text(s.balance, style = MaterialTheme.typography.labelLarge)
                             Text(
                                 text = formatMoney(summary?.balance ?: 0.0, state.currency),
                                 style = MaterialTheme.typography.headlineMedium,
                                 color = if ((summary?.balance ?: 0.0) >= 0) FamilySuccess else FamilyDanger,
                             )
-                            Text("Income ${formatMoney(summary?.totalIncome ?: 0.0, state.currency)}")
-                            Text("Expense ${formatMoney(summary?.totalExpense ?: 0.0, state.currency)}")
+                            Text("${s.income} ${formatMoney(summary?.totalIncome ?: 0.0, state.currency)}")
+                            Text("${s.expense} ${formatMoney(summary?.totalExpense ?: 0.0, state.currency)}")
                         }
                     }
                 }
@@ -183,7 +187,7 @@ internal fun BudgetContent(
                         FilterChip(
                             selected = state.categoryFilter == null,
                             onClick = { onCategoryFilter(null) },
-                            label = { Text("All") },
+                            label = { Text(s.all) },
                         )
                         BudgetExpenseCategories.forEach { category ->
                             FilterChip(
@@ -197,14 +201,14 @@ internal fun BudgetContent(
                     }
                 }
                 if (state.transactions.isEmpty()) {
-                    item { FamilyEmptyState(message = "No transactions this month.") }
+                    item { FamilyEmptyState(message = s.noTransactionsMonth) }
                 } else {
                     items(state.transactions, key = { it.id }) { tx ->
                         Card(onClick = { onTransactionClick(tx.id) }, modifier = Modifier.fillMaxWidth()) {
                             Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                 Text(tx.title, style = MaterialTheme.typography.titleMedium)
                                 Text(
-                                    "${if (tx.isIncome) "Income" else tx.category.label()} · ${formatDay(tx.occurredAt)}",
+                                    "${if (tx.isIncome) s.income else tx.category.label()} · ${formatDay(tx.occurredAt)}",
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                                 )
@@ -214,7 +218,7 @@ internal fun BudgetContent(
                                     style = MaterialTheme.typography.titleSmall,
                                 )
                                 Text(
-                                    text = "Delete",
+                                    text = s.delete,
                                     color = MaterialTheme.colorScheme.error,
                                     modifier = Modifier
                                         .padding(top = 4.dp)

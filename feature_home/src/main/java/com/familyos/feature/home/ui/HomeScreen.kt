@@ -48,6 +48,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Currency
 import java.util.Locale
+import com.familyos.core.ui.locale.rememberUiStrings
 
 /**
  * Home dashboard aggregating tasks, shopping, events, budget, and activity.
@@ -63,13 +64,14 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val s = rememberUiStrings()
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
                     Column {
-                        Text("Home", style = MaterialTheme.typography.titleLarge)
+                        Text(s.homeTitle, style = MaterialTheme.typography.titleLarge)
                         state.familyName?.let {
                             Text(
                                 it,
@@ -93,16 +95,16 @@ fun HomeScreen(
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    Text("Set up your family", style = MaterialTheme.typography.titleLarge)
+                    Text(s.setupFamilyTitle, style = MaterialTheme.typography.titleLarge)
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        "Create a family or join with an invite code to see your dashboard.",
+                        s.setupFamilyBody,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     TextButton(onClick = onCreateOrJoinFamily) {
-                        Text("Create or join family")
+                        Text(s.createOrJoinFamily)
                     }
                 }
             }
@@ -116,11 +118,11 @@ fun HomeScreen(
                 ) {
                     item {
                         DashboardSection(
-                            title = "Overdue",
-                            actionLabel = "Tasks",
+                            title = s.sectionOverdue,
+                            actionLabel = s.actionTasks,
                             onAction = onOpenTasks,
                             empty = state.overdueTasks.isEmpty(),
-                            emptyMessage = "Nothing overdue",
+                            emptyMessage = s.emptyNothingOverdue,
                         ) {
                             state.overdueTasks.take(5).forEach { task ->
                                 TaskLine(task = task, highlight = true, onClick = onOpenTasks)
@@ -129,11 +131,11 @@ fun HomeScreen(
                     }
                     item {
                         DashboardSection(
-                            title = "Open tasks",
-                            actionLabel = "See all",
+                            title = s.sectionOpenTasks,
+                            actionLabel = s.actionSeeAll,
                             onAction = onOpenTasks,
                             empty = state.openTasks.isEmpty(),
-                            emptyMessage = "No open tasks",
+                            emptyMessage = s.emptyNoOpenTasks,
                         ) {
                             state.openTasks.take(5).forEach { task ->
                                 TaskLine(task = task, onClick = onOpenTasks)
@@ -142,11 +144,11 @@ fun HomeScreen(
                     }
                     item {
                         DashboardSection(
-                            title = "Shopping",
-                            actionLabel = "List",
+                            title = s.sectionShopping,
+                            actionLabel = s.actionList,
                             onAction = onOpenShopping,
                             empty = state.shoppingItems.isEmpty(),
-                            emptyMessage = "Shopping list is clear",
+                            emptyMessage = s.emptyShoppingClear,
                         ) {
                             state.shoppingItems.take(6).forEach { item ->
                                 ShoppingLine(item = item, onClick = onOpenShopping)
@@ -155,11 +157,11 @@ fun HomeScreen(
                     }
                     item {
                         DashboardSection(
-                            title = "Today's events",
-                            actionLabel = "Calendar",
+                            title = s.sectionTodayEvents,
+                            actionLabel = s.actionCalendar,
                             onAction = onOpenCalendar,
                             empty = state.todayEvents.isEmpty(),
-                            emptyMessage = "No events today",
+                            emptyMessage = s.emptyNoEventsToday,
                         ) {
                             state.todayEvents.forEach { event ->
                                 EventLine(event = event, onClick = onOpenCalendar)
@@ -168,11 +170,11 @@ fun HomeScreen(
                     }
                     item {
                         DashboardSection(
-                            title = "Upcoming deadlines",
-                            actionLabel = "Tasks",
+                            title = s.sectionUpcomingDeadlines,
+                            actionLabel = s.actionTasks,
                             onAction = onOpenTasks,
                             empty = state.upcomingDeadlines.isEmpty(),
-                            emptyMessage = "No upcoming deadlines",
+                            emptyMessage = s.emptyNoUpcomingDeadlines,
                         ) {
                             state.upcomingDeadlines.take(5).forEach { task ->
                                 TaskLine(task = task, onClick = onOpenTasks)
@@ -187,11 +189,11 @@ fun HomeScreen(
                     }
                     item {
                         DashboardSection(
-                            title = "Recent family activity",
+                            title = s.sectionRecentActivity,
                             actionLabel = null,
                             onAction = null,
                             empty = state.recentActivity.isEmpty(),
-                            emptyMessage = "Activity will appear as your family collaborates",
+                            emptyMessage = s.emptyActivityHint,
                         ) {
                             state.recentActivity.take(8).forEach { activity ->
                                 ActivityLine(activity)
@@ -213,6 +215,8 @@ private fun DashboardSection(
     emptyMessage: String,
     content: @Composable () -> Unit,
 ) {
+    val s = rememberUiStrings()
+
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -243,6 +247,8 @@ private fun DashboardSection(
 
 @Composable
 private fun TaskLine(task: TaskItem, highlight: Boolean = false, onClick: () -> Unit) {
+    val s = rememberUiStrings()
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -277,6 +283,8 @@ private fun TaskLine(task: TaskItem, highlight: Boolean = false, onClick: () -> 
 
 @Composable
 private fun ShoppingLine(item: ShoppingItem, onClick: () -> Unit) {
+    val s = rememberUiStrings()
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -300,6 +308,8 @@ private fun ShoppingLine(item: ShoppingItem, onClick: () -> Unit) {
 
 @Composable
 private fun EventLine(event: CalendarEvent, onClick: () -> Unit) {
+    val s = rememberUiStrings()
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -336,20 +346,21 @@ private fun ActivityLine(activity: FamilyActivity) {
 
 @Composable
 private fun BudgetCard(summary: BudgetSummary?, onClick: () -> Unit) {
+    val s = rememberUiStrings()
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
     ) {
         Text(
-            text = "This month's budget",
+            text = s.monthBudgetTitle,
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
         )
         Spacer(modifier = Modifier.height(8.dp))
         if (summary == null) {
             Text(
-                "No budget data yet",
+                s.noBudgetData,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f),
             )
@@ -359,10 +370,10 @@ private fun BudgetCard(summary: BudgetSummary?, onClick: () -> Unit) {
                     this.currency = Currency.getInstance(summary.currency)
                 }
             }.getOrElse { NumberFormat.getCurrencyInstance(Locale.getDefault()) }
-            Text("Income  ${currency.format(summary.totalIncome)}")
-            Text("Expense ${currency.format(summary.totalExpense)}")
+            Text("${s.income}  ${currency.format(summary.totalIncome)}")
+            Text("${s.expense} ${currency.format(summary.totalExpense)}")
             Text(
-                "Balance ${currency.format(summary.balance)}",
+                "${s.balance} ${currency.format(summary.balance)}",
                 fontWeight = FontWeight.SemiBold,
                 color = if (summary.balance >= 0) {
                     MaterialTheme.colorScheme.primary

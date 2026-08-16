@@ -30,6 +30,7 @@ import com.familyos.core.ui.components.FamilyLoading
 import com.familyos.feature.billing.BillingConstants
 import com.familyos.feature.billing.viewmodel.BillingUiState
 import com.familyos.feature.billing.viewmodel.BillingViewModel
+import com.familyos.core.ui.locale.rememberUiStrings
 
 /**
  * Premium paywall with Play Billing, PayPal direct pay + redeem, restore, and exports.
@@ -49,6 +50,8 @@ fun PaywallScreen(
     onExportExcel: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val s = rememberUiStrings()
+
     val context = LocalContext.current
     DisposableEffect(Unit) {
         val activity = context as? Activity
@@ -58,7 +61,7 @@ fun PaywallScreen(
 
     Scaffold(
         modifier = modifier,
-        topBar = { TopAppBar(title = { Text("FamilyOS Premium") }) },
+        topBar = { TopAppBar(title = { Text(s.premiumTitle) }) },
     ) { padding ->
         if (state.isLoading) {
             FamilyLoading()
@@ -73,14 +76,14 @@ fun PaywallScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(
-                if (state.subscription?.isPremium == true) "You are on Premium" else "Upgrade your family OS",
+                if (state.subscription?.isPremium == true) s.onPremium else s.upgradeFamilyOs,
                 style = MaterialTheme.typography.headlineMedium,
             )
             Text(BillingViewModel.FREE_LIMITS_TEXT)
             Text(BillingViewModel.PREMIUM_LIMITS_TEXT)
 
             Text(
-                "Google Play subscriptions use Play Billing. PayPal is for direct payment; after paying, enter activation code.",
+                s.billingPlayPaypalHint,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f),
             )
@@ -89,44 +92,48 @@ fun PaywallScreen(
             val yearly = state.products.firstOrNull { it.productId == BillingProducts.PREMIUM_YEARLY }
 
             PlanCard(
-                title = "Monthly",
+                title = s.monthly,
                 price = monthly?.formattedPrice ?: "…",
                 subtitle = monthly?.description ?: BillingProducts.PREMIUM_MONTHLY,
                 enabled = !state.isPurchasing && state.subscription?.isPremium != true,
                 onClick = onPurchaseMonthly,
             )
             PlanCard(
-                title = "Yearly",
+                title = s.yearly,
                 price = yearly?.formattedPrice ?: "…",
                 subtitle = yearly?.description ?: BillingProducts.PREMIUM_YEARLY,
                 enabled = !state.isPurchasing && state.subscription?.isPremium != true,
                 onClick = onPurchaseYearly,
             )
 
-            OutlinedButton(onClick = onRestore, modifier = Modifier.fillMaxWidth()) {
-                Text("Restore purchases")
+            OutlinedButton(
+                onClick = onRestore,
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !state.isRestoring && !state.isPurchasing,
+            ) {
+                Text(if (state.isRestoring) s.restoring else s.restorePurchases)
             }
 
             Spacer(modifier = Modifier.height(4.dp))
-            Text("PayPal (direct)", style = MaterialTheme.typography.titleMedium)
+            Text(s.paypalDirect, style = MaterialTheme.typography.titleMedium)
             OutlinedButton(
                 onClick = onOpenPayPal,
                 modifier = Modifier.fillMaxWidth(),
                 enabled = state.subscription?.isPremium != true,
             ) {
-                Text("Pay with PayPal (${BillingConstants.PAYPAL_HANDLE})")
+                Text(s.payWithPaypal.format(BillingConstants.PAYPAL_HANDLE))
             }
             OutlinedTextField(
                 value = state.redeemCode,
                 onValueChange = onRedeemCodeChange,
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("Activation code") },
+                label = { Text(s.activationCode) },
                 placeholder = { Text(BillingConstants.REDEEM_CODE) },
                 singleLine = true,
                 enabled = state.subscription?.isPremium != true,
             )
             Text(
-                "After PayPal payment to ${BillingConstants.PAYPAL_HANDLE}, enter code ${BillingConstants.REDEEM_CODE}",
+                s.afterPaypalHint.format(BillingConstants.PAYPAL_HANDLE, BillingConstants.REDEEM_CODE),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f),
             )
@@ -135,17 +142,17 @@ fun PaywallScreen(
                 modifier = Modifier.fillMaxWidth(),
                 enabled = state.redeemCode.isNotBlank() && state.subscription?.isPremium != true,
             ) {
-                Text("Activate Premium")
+                Text(s.activatePremium)
             }
 
             if (state.entitlements?.exportEnabled == true) {
                 Spacer(modifier = Modifier.height(8.dp))
-                Text("Premium exports", style = MaterialTheme.typography.titleMedium)
+                Text(s.premiumExports, style = MaterialTheme.typography.titleMedium)
                 Button(onClick = onExportPdf, modifier = Modifier.fillMaxWidth()) {
-                    Text("Export PDF")
+                    Text(s.exportPdf)
                 }
                 Button(onClick = onExportExcel, modifier = Modifier.fillMaxWidth()) {
-                    Text("Export Excel / CSV")
+                    Text(s.exportExcelCsv)
                 }
             }
 
@@ -156,7 +163,7 @@ fun PaywallScreen(
                 Text(it, color = MaterialTheme.colorScheme.error)
             }
             state.lastExportFile?.let {
-                Text("Saved: ${it.absolutePath}", style = MaterialTheme.typography.bodySmall)
+                Text("${s.savedPrefix}: ${it.absolutePath}", style = MaterialTheme.typography.bodySmall)
             }
         }
     }
@@ -170,6 +177,8 @@ private fun PlanCard(
     enabled: Boolean,
     onClick: () -> Unit,
 ) {
+    val s = rememberUiStrings()
+
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
         modifier = Modifier.fillMaxWidth(),
@@ -179,7 +188,7 @@ private fun PlanCard(
             Text(price, style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.primary)
             Text(subtitle, style = MaterialTheme.typography.bodyMedium)
             Button(onClick = onClick, enabled = enabled, modifier = Modifier.fillMaxWidth()) {
-                Text("Subscribe")
+                Text(s.subscribe)
             }
         }
     }

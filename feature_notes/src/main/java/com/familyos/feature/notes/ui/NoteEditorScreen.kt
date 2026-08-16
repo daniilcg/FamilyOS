@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.familyos.core.domain.model.Note
 import com.familyos.core.ui.components.FamilyLoading
+import com.familyos.core.ui.locale.rememberUiStrings
 
 /**
  * Note editor supporting text, photos, checklist items, and tags.
@@ -59,6 +60,8 @@ fun NoteEditorScreen(
     onToggleArchive: (String, Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val s = rememberUiStrings()
+
     if (note == null) {
         FamilyLoading()
         return
@@ -72,25 +75,25 @@ fun NoteEditorScreen(
         modifier = modifier,
         topBar = {
             TopAppBar(
-                title = { Text(if (note.id.isBlank()) "New note" else "Edit note") },
+                title = { Text(if (note.id.isBlank()) s.newNote else s.editNote) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = s.back)
                     }
                 },
                 actions = {
                     if (note.id.isNotBlank()) {
                         IconButton(onClick = { onTogglePin(note.id, !note.isPinned) }) {
-                            Icon(Icons.Default.PushPin, contentDescription = "Pin")
+                            Icon(Icons.Default.PushPin, contentDescription = s.pin)
                         }
                         IconButton(onClick = { onToggleArchive(note.id, !note.isArchived) }) {
-                            Icon(Icons.Default.Archive, contentDescription = "Archive")
+                            Icon(Icons.Default.Archive, contentDescription = s.archive)
                         }
                         IconButton(onClick = { onDelete(note.id); onBack() }) {
-                            Icon(Icons.Default.Delete, contentDescription = "Delete")
+                            Icon(Icons.Default.Delete, contentDescription = s.delete)
                         }
                     }
-                    TextButton(onClick = onSave) { Text("Save") }
+                    TextButton(onClick = onSave) { Text(s.save) }
                 },
             )
         },
@@ -106,14 +109,14 @@ fun NoteEditorScreen(
             OutlinedTextField(
                 value = note.title,
                 onValueChange = onTitleChange,
-                label = { Text("Title") },
+                label = { Text(s.title) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
             )
             OutlinedTextField(
                 value = note.body,
                 onValueChange = onBodyChange,
-                label = { Text("Text") },
+                label = { Text(s.textLabel) },
                 modifier = Modifier.fillMaxWidth(),
                 minLines = 5,
             )
@@ -123,11 +126,11 @@ fun NoteEditorScreen(
                     tagInput = it
                     onTagsChange(it.split(',').map { t -> t.trim() }.filter { t -> t.isNotEmpty() })
                 },
-                label = { Text("Tags") },
+                label = { Text(s.tags) },
                 modifier = Modifier.fillMaxWidth(),
             )
 
-            Text("Photos")
+            Text(s.photos)
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(note.photoUrls) { url ->
                     AsyncImage(
@@ -144,7 +147,7 @@ fun NoteEditorScreen(
                 OutlinedTextField(
                     value = photoInput,
                     onValueChange = { photoInput = it },
-                    label = { Text("Photo URL") },
+                    label = { Text(s.photoUrl) },
                     modifier = Modifier.weight(1f),
                     singleLine = true,
                 )
@@ -155,10 +158,10 @@ fun NoteEditorScreen(
                             photoInput = ""
                         }
                     },
-                ) { Icon(Icons.Default.Add, contentDescription = "Add photo") }
+                ) { Icon(Icons.Default.Add, contentDescription = s.addPhotoCd) }
             }
 
-            Text("Checklist")
+            Text(s.checklist)
             note.checklist.forEach { item ->
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(
@@ -172,7 +175,7 @@ fun NoteEditorScreen(
                 OutlinedTextField(
                     value = checklistInput,
                     onValueChange = { checklistInput = it },
-                    label = { Text("Checklist item") },
+                    label = { Text(s.checklistItem) },
                     modifier = Modifier.weight(1f),
                     singleLine = true,
                 )
@@ -183,7 +186,7 @@ fun NoteEditorScreen(
                             checklistInput = ""
                         }
                     },
-                ) { Icon(Icons.Default.Add, contentDescription = "Add item") }
+                ) { Icon(Icons.Default.Add, contentDescription = s.addItemCdShort) }
             }
 
             errorMessage?.let {

@@ -31,6 +31,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.familyos.feature.family.FamilyEvent
 import com.familyos.feature.family.FamilyViewModel
+import com.familyos.core.ui.locale.rememberUiStrings
 
 /**
  * Screen for creating a new family workspace.
@@ -43,6 +44,7 @@ fun CreateFamilyScreen(
     viewModel: FamilyViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val s = rememberUiStrings()
     val snackbar = remember { SnackbarHostState() }
 
     LaunchedEffect(Unit) {
@@ -64,10 +66,10 @@ fun CreateFamilyScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Create family") },
+                title = { Text(s.createFamily) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = s.back)
                     }
                 },
             )
@@ -81,11 +83,11 @@ fun CreateFamilyScreen(
                 .padding(24.dp),
         ) {
             Text(
-                text = "Give your family a name",
+                text = s.createFamilyHeadline,
                 style = MaterialTheme.typography.titleLarge,
             )
             Text(
-                text = "You will become the owner and can invite members with a code or QR.",
+                text = s.createFamilyBody,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
             )
@@ -94,7 +96,7 @@ fun CreateFamilyScreen(
                 value = state.familyNameInput,
                 onValueChange = viewModel::onFamilyNameChange,
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("Family name") },
+                label = { Text(s.familyName) },
                 leadingIcon = { Icon(Icons.Outlined.Home, contentDescription = null) },
                 singleLine = true,
                 enabled = !state.isLoading,
@@ -114,7 +116,7 @@ fun CreateFamilyScreen(
                         color = MaterialTheme.colorScheme.onPrimary,
                     )
                 } else {
-                    Text("Create family")
+                    Text(s.createFamily)
                 }
             }
         }

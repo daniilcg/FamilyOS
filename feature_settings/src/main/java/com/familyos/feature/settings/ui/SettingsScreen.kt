@@ -47,6 +47,7 @@ import com.familyos.feature.settings.AiProviderOption
 import com.familyos.feature.settings.R
 import com.familyos.feature.settings.SettingsEvent
 import com.familyos.feature.settings.SettingsViewModel
+import com.familyos.core.ui.locale.rememberUiStrings
 
 /**
  * Settings screen for theme, notifications, biometric lock, language, AI provider, and logout.
@@ -60,6 +61,7 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val s = rememberUiStrings()
     val snackbar = remember { SnackbarHostState() }
     val prefs = state.preferences
 
@@ -134,7 +136,7 @@ fun SettingsScreen(
                 SectionTitle(stringResource(R.string.settings_notifications))
                 SettingsSwitchRow(
                     title = stringResource(R.string.settings_notifications),
-                    subtitle = "Task reminders, shopping updates, and family alerts",
+                    subtitle = s.settingsNotificationsSubtitle,
                     checked = prefs.notificationsEnabled,
                     onCheckedChange = viewModel::setNotificationsEnabled,
                 )

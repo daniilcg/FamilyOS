@@ -43,6 +43,7 @@ import com.familyos.feature.family.FamilyViewModel
 import com.familyos.feature.family.qr.QrCodeGenerator
 import com.familyos.feature.family.qr.QrCodeImage
 import kotlinx.coroutines.launch
+import com.familyos.core.ui.locale.rememberUiStrings
 
 /**
  * Invite screen showing the current invite code and a generated QR image.
@@ -54,6 +55,7 @@ fun InviteScreen(
     viewModel: FamilyViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val s = rememberUiStrings()
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -69,10 +71,10 @@ fun InviteScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Invite members") },
+                title = { Text(s.inviteMembers) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = s.back)
                     }
                 },
                 actions = {
@@ -80,7 +82,7 @@ fun InviteScreen(
                         onClick = viewModel::refreshInviteCode,
                         enabled = state.canManageRoles && !state.isLoading,
                     ) {
-                        Icon(Icons.Outlined.Refresh, contentDescription = "Rotate invite code")
+                        Icon(Icons.Outlined.Refresh, contentDescription = s.rotateInvite)
                     }
                 },
             )
@@ -88,7 +90,7 @@ fun InviteScreen(
         snackbarHost = { SnackbarHost(snackbar) },
     ) { padding ->
         if (code.isNullOrBlank()) {
-            FamilyEmptyState(message = "No invite code available. Create or join a family first.")
+            FamilyEmptyState(message = s.noInviteCode)
         } else {
             Column(
                 modifier = Modifier
@@ -99,11 +101,11 @@ fun InviteScreen(
                 verticalArrangement = Arrangement.Top,
             ) {
                 Text(
-                    text = "Share this code or QR",
+                    text = s.shareCodeOrQr,
                     style = MaterialTheme.typography.titleLarge,
                 )
                 Text(
-                    text = "Anyone with the code can join ${state.family?.name ?: "your family"}.",
+                    text = s.anyoneCanJoin.format(state.family?.name ?: s.yourFamily),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                 )
@@ -120,32 +122,32 @@ fun InviteScreen(
                 Spacer(modifier = Modifier.height(20.dp))
                 Button(
                     onClick = {
-                        copyToClipboard(context, code)
-                        scope.launch { snackbar.showSnackbar("Invite code copied") }
+                        copyToClipboard(context, code, s.clipboardInviteLabel)
+                        scope.launch { snackbar.showSnackbar(s.inviteCodeCopied) }
                     },
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Icon(Icons.Outlined.ContentCopy, contentDescription = null)
                     Spacer(modifier = Modifier.padding(6.dp))
-                    Text("Copy code")
+                    Text(s.copyCode)
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedButton(
                     onClick = {
                         val link = QrCodeGenerator.invitePayload(code)
-                        copyToClipboard(context, link)
-                        scope.launch { snackbar.showSnackbar("Invite link copied") }
+                        copyToClipboard(context, link, s.clipboardInviteLabel)
+                        scope.launch { snackbar.showSnackbar(s.inviteLinkCopied) }
                     },
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Text("Copy invite link")
+                    Text(s.copyInviteLink)
                 }
             }
         }
     }
 }
 
-private fun copyToClipboard(context: Context, text: String) {
+private fun copyToClipboard(context: Context, text: String, label: String) {
     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-    clipboard.setPrimaryClip(ClipData.newPlainText("FamilyOS invite", text))
+    clipboard.setPrimaryClip(ClipData.newPlainText(label, text))
 }

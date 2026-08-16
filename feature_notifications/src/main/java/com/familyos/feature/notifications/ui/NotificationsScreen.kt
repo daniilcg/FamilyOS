@@ -38,6 +38,9 @@ import com.familyos.core.ui.components.FamilyLoading
 import com.familyos.feature.notifications.viewmodel.NotificationsUiState
 import java.text.DateFormat
 import java.util.Date
+import com.familyos.core.ui.locale.rememberUiStrings
+import com.familyos.core.locale.AppLocale
+import com.familyos.core.locale.UiStringsCatalog
 
 private val PRIMARY_FILTERS = listOf(
     NotificationType.NEW_TASK,
@@ -61,6 +64,8 @@ fun NotificationsScreen(
     onDelete: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val s = rememberUiStrings()
+
     Scaffold(
         modifier = modifier,
         topBar = {
@@ -73,12 +78,12 @@ fun NotificationsScreen(
                             }
                         },
                     ) {
-                        Text("Notifications")
+                        Text(s.notificationsTitle)
                     }
                 },
                 actions = {
                     IconButton(onClick = onMarkAllRead) {
-                        Icon(Icons.Default.DoneAll, contentDescription = "Mark all read")
+                        Icon(Icons.Default.DoneAll, contentDescription = s.markAllRead)
                     }
                 },
             )
@@ -100,7 +105,7 @@ fun NotificationsScreen(
                 FilterChip(
                     selected = state.filter == null,
                     onClick = { onFilterChange(null) },
-                    label = { Text("All") },
+                    label = { Text(s.all) },
                 )
                 PRIMARY_FILTERS.forEach { type ->
                     FilterChip(
@@ -112,7 +117,7 @@ fun NotificationsScreen(
             }
             when {
                 state.isLoading -> FamilyLoading()
-                state.notifications.isEmpty() -> FamilyEmptyState("You're all caught up.")
+                state.notifications.isEmpty() -> FamilyEmptyState(s.allCaughtUp)
                 else -> LazyColumn(
                     contentPadding = PaddingValues(bottom = 24.dp),
                     verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -136,6 +141,7 @@ private fun NotificationRow(
     onClick: () -> Unit,
     onDelete: () -> Unit,
 ) {
+    val s = rememberUiStrings()
     ListItem(
         headlineContent = {
             Text(
@@ -157,7 +163,7 @@ private fun NotificationRow(
         leadingContent = { Icon(Icons.Default.Notifications, contentDescription = null) },
         trailingContent = {
             IconButton(onClick = onDelete) {
-                Icon(Icons.Default.Delete, contentDescription = "Delete")
+                Icon(Icons.Default.Delete, contentDescription = s.delete)
             }
         },
         modifier = Modifier
@@ -166,13 +172,16 @@ private fun NotificationRow(
     )
 }
 
-private fun NotificationType.label(): String = when (this) {
-    NotificationType.NEW_TASK, NotificationType.TASK_ASSIGNED, NotificationType.TASK_DUE -> "Task"
-    NotificationType.SHOPPING, NotificationType.SHOPPING_UPDATE -> "Shopping"
-    NotificationType.EVENT, NotificationType.EVENT_REMINDER -> "Event"
-    NotificationType.BUDGET, NotificationType.BUDGET_ALERT -> "Budget"
-    NotificationType.DOCUMENT, NotificationType.DOCUMENT_SHARED -> "Document"
-    NotificationType.MEMBER_JOINED, NotificationType.FAMILY_INVITE -> "Member"
-    NotificationType.CHAT_MESSAGE -> "Chat"
-    NotificationType.SYSTEM -> "System"
+private fun NotificationType.label(): String {
+    val s = UiStringsCatalog.forLang(AppLocale.currentLanguage())
+    return when (this) {
+        NotificationType.NEW_TASK, NotificationType.TASK_ASSIGNED, NotificationType.TASK_DUE -> s.notifTypeTask
+        NotificationType.SHOPPING, NotificationType.SHOPPING_UPDATE -> s.notifTypeShopping
+        NotificationType.EVENT, NotificationType.EVENT_REMINDER -> s.notifTypeEvent
+        NotificationType.BUDGET, NotificationType.BUDGET_ALERT -> s.notifTypeBudget
+        NotificationType.DOCUMENT, NotificationType.DOCUMENT_SHARED -> s.notifTypeDocument
+        NotificationType.MEMBER_JOINED, NotificationType.FAMILY_INVITE -> s.notifTypeMember
+        NotificationType.CHAT_MESSAGE -> s.notifTypeChat
+        NotificationType.SYSTEM -> s.notifTypeSystem
+    }
 }

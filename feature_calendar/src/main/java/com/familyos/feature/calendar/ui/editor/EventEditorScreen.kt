@@ -46,6 +46,7 @@ import com.familyos.feature.calendar.util.label
 import com.familyos.feature.calendar.viewmodel.EventEditorEvent
 import com.familyos.feature.calendar.viewmodel.EventEditorViewModel
 import java.time.LocalDate
+import com.familyos.core.ui.locale.rememberUiStrings
 
 /**
  * Create / edit calendar event form.
@@ -58,6 +59,7 @@ fun EventEditorScreen(
     viewModel: EventEditorViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val s = rememberUiStrings()
     val snackbar = remember { SnackbarHostState() }
     var typeExpanded by remember { mutableStateOf(false) }
 
@@ -71,10 +73,10 @@ fun EventEditorScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (state.isEdit) "Edit event" else "New event") },
+                title = { Text(if (state.isEdit) s.editEvent else s.newEvent) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = s.back)
                     }
                 },
             )
@@ -96,14 +98,14 @@ fun EventEditorScreen(
                     value = state.title,
                     onValueChange = viewModel::onTitleChange,
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Title") },
+                    label = { Text(s.title) },
                     singleLine = true,
                 )
                 OutlinedTextField(
                     value = state.description,
                     onValueChange = viewModel::onDescriptionChange,
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Description") },
+                    label = { Text(s.description) },
                     minLines = 2,
                 )
                 ExposedDropdownMenuBox(expanded = typeExpanded, onExpandedChange = { typeExpanded = it }) {
@@ -111,7 +113,7 @@ fun EventEditorScreen(
                         value = state.type.label(),
                         onValueChange = {},
                         readOnly = true,
-                        label = { Text("Type") },
+                        label = { Text(s.type) },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(typeExpanded) },
                         modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
                     )
@@ -132,31 +134,31 @@ fun EventEditorScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text("All day")
+                    Text(s.allDay)
                     Switch(checked = state.allDay, onCheckedChange = viewModel::onAllDayChange)
                 }
-                Text("Starts ${formatEventDay(state.startAt)} ${if (state.allDay) "" else formatEventTime(state.startAt)}")
-                Text("Ends ${formatEventDay(state.endAt)} ${if (state.allDay) "" else formatEventTime(state.endAt)}")
+                Text("${s.startsPrefix} ${formatEventDay(state.startAt)} ${if (state.allDay) "" else formatEventTime(state.startAt)}")
+                Text("${s.endsPrefix} ${formatEventDay(state.endAt)} ${if (state.allDay) "" else formatEventTime(state.endAt)}")
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(onClick = { viewModel.setDate(LocalDate.now()) }) { Text("Today") }
-                    Button(onClick = { viewModel.setDate(LocalDate.now().plusDays(1)) }) { Text("Tomorrow") }
+                    Button(onClick = { viewModel.setDate(LocalDate.now()) }) { Text(s.today) }
+                    Button(onClick = { viewModel.setDate(LocalDate.now().plusDays(1)) }) { Text(s.tomorrow) }
                     Button(onClick = {
                         viewModel.onStartAtChange(System.currentTimeMillis())
                         viewModel.onEndAtChange(System.currentTimeMillis() + 3_600_000L)
-                    }) { Text("Now +1h") }
+                    }) { Text(s.nowPlus1h) }
                 }
                 OutlinedTextField(
                     value = state.location,
                     onValueChange = viewModel::onLocationChange,
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Location") },
+                    label = { Text(s.location) },
                     singleLine = true,
                 )
                 OutlinedTextField(
                     value = state.reminderMinutes,
                     onValueChange = viewModel::onReminderChange,
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Reminder (minutes before)") },
+                    label = { Text(s.reminderMinutes) },
                     singleLine = true,
                 )
                 Row(
@@ -164,7 +166,7 @@ fun EventEditorScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text("Recurrence")
+                    Text(s.recurrence)
                     Switch(checked = state.recurrenceEnabled, onCheckedChange = viewModel::onRecurrenceEnabled)
                 }
                 if (state.recurrenceEnabled) {
@@ -181,7 +183,7 @@ fun EventEditorScreen(
                         value = state.recurrenceInterval,
                         onValueChange = viewModel::onRecurrenceInterval,
                         modifier = Modifier.fillMaxWidth(),
-                        label = { Text("Interval") },
+                        label = { Text(s.interval) },
                         singleLine = true,
                     )
                 }
@@ -190,7 +192,7 @@ fun EventEditorScreen(
                     enabled = !state.isSaving,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Text(if (state.isSaving) "Saving…" else "Save")
+                    Text(if (state.isSaving) s.saving else s.save)
                 }
             }
         }

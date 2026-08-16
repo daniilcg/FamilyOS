@@ -50,6 +50,7 @@ import com.familyos.feature.tasks.util.label
 import com.familyos.feature.tasks.viewmodel.TaskEvent
 import com.familyos.feature.tasks.viewmodel.TaskListUiState
 import com.familyos.feature.tasks.viewmodel.TaskViewModel
+import com.familyos.core.ui.locale.rememberUiStrings
 
 /**
  * Task list with status / priority / assignee filters and search.
@@ -62,6 +63,7 @@ fun TaskListScreen(
     viewModel: TaskViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val s = rememberUiStrings()
     val snackbar = remember { SnackbarHostState() }
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
@@ -98,6 +100,8 @@ internal fun TaskListContent(
     onBack: (() -> Unit)?,
     onClearError: () -> Unit,
 ) {
+    val s = rememberUiStrings()
+
     LaunchedEffect(state.errorMessage) {
         val msg = state.errorMessage ?: return@LaunchedEffect
         snackbar.showSnackbar(msg)
@@ -106,11 +110,11 @@ internal fun TaskListContent(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Tasks") },
+                title = { Text(s.tasksTitle) },
                 navigationIcon = {
                     if (onBack != null) {
                         IconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = s.back)
                         }
                     }
                 },
@@ -118,14 +122,14 @@ internal fun TaskListContent(
         },
         floatingActionButton = {
             FloatingActionButton(onClick = onAddClick) {
-                Icon(Icons.Filled.Add, contentDescription = "Add task")
+                Icon(Icons.Filled.Add, contentDescription = s.addTaskCd)
             }
         },
         snackbarHost = { SnackbarHost(snackbar) },
     ) { padding ->
         when {
             state.isLoading && state.tasks.isEmpty() -> FamilyLoading()
-            state.familyId.isNullOrBlank() -> FamilyEmptyState(message = "Join a family to manage tasks.")
+            state.familyId.isNullOrBlank() -> FamilyEmptyState(message = s.joinFamilyForTasks)
             else -> Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -138,7 +142,7 @@ internal fun TaskListContent(
                     onValueChange = onQueryChange,
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    label = { Text("Search") },
+                    label = { Text(s.search) },
                 )
                 Row(
                     modifier = Modifier.horizontalScroll(rememberScrollState()),
@@ -159,7 +163,7 @@ internal fun TaskListContent(
                     FilterChip(
                         selected = state.priorityFilter == null,
                         onClick = { onPriorityFilter(null) },
-                        label = { Text("Any priority") },
+                        label = { Text(s.anyPriority) },
                     )
                     TaskPriority.entries.forEach { priority ->
                         FilterChip(
@@ -181,7 +185,7 @@ internal fun TaskListContent(
                         FilterChip(
                             selected = state.assigneeFilter == null,
                             onClick = { onAssigneeFilter(null) },
-                            label = { Text("Anyone") },
+                            label = { Text(s.anyone) },
                         )
                         state.members.forEach { member ->
                             FilterChip(
@@ -197,7 +201,7 @@ internal fun TaskListContent(
                     }
                 }
                 if (state.tasks.isEmpty()) {
-                    FamilyEmptyState(message = "No tasks match your filters.")
+                    FamilyEmptyState(message = s.noTasksMatch)
                 } else {
                     LazyColumn(
                         contentPadding = PaddingValues(bottom = 88.dp),
@@ -213,10 +217,10 @@ internal fun TaskListContent(
                                     Text(task.title, style = MaterialTheme.typography.titleMedium)
                                     Text(
                                         text = buildString {
-                                            append(if (overdue) "Overdue" else task.status.label())
+                                            append(if (overdue) s.overdue else task.status.label())
                                             append(" · ")
                                             append(task.priority.label())
-                                            append(" · Due ")
+                                            append(" · ${s.duePrefix} ")
                                             append(formatTaskEpoch(task.dueAt))
                                         },
                                         style = MaterialTheme.typography.bodyMedium,
@@ -225,7 +229,7 @@ internal fun TaskListContent(
                                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                         AssistChip(
                                             onClick = { onMarkDone(task.id) },
-                                            label = { Text("Done") },
+                                            label = { Text(s.done) },
                                             enabled = task.status != TaskStatus.DONE,
                                         )
                                     }

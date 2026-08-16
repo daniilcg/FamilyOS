@@ -9,6 +9,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.familyos.core.ui.locale.rememberUiStrings
 
 /**
  * Info banner for local offline auth mode (not an error).
@@ -19,6 +20,7 @@ fun FirebaseSetupBanner(
     modifier: Modifier = Modifier,
 ) {
     if (!visible) return
+    val s = rememberUiStrings()
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -26,13 +28,12 @@ fun FirebaseSetupBanner(
             .padding(12.dp),
     ) {
         Text(
-            text = "Локальный режим — данные на устройстве",
+            text = s.localModeTitle,
             style = MaterialTheme.typography.titleSmall,
             color = MaterialTheme.colorScheme.onSecondaryContainer,
         )
         Text(
-            text = "Email/пароль работают офлайн. Чтобы включить облачную синхронизацию " +
-                "и Google Sign-In, замените google-services.json на файл из Firebase Console.",
+            text = s.localModeBody,
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSecondaryContainer,
         )

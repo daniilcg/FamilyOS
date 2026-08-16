@@ -57,6 +57,7 @@ dependencies {
 
     implementation(libs.billing.ktx)
     implementation(libs.androidx.datastore)
+    implementation(libs.timber)
 
     debugImplementation(libs.androidx.compose.ui.tooling)
 }

@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">FamilyOS</string>
+
+    <string name="nav_home">Головна</string>
+    <string name="nav_shopping">Покупки</string>
+    <string name="nav_tasks">Завдання</string>
+    <string name="nav_calendar">Календар</string>
+    <string name="nav_more">Більше</string>
+
+    <string name="more_title">Більше</string>
+    <string name="more_notes">Нотатки</string>
+    <string name="more_documents">Документи</string>
+    <string name="more_budget">Бюджет</string>
+    <string name="more_chat">Чат</string>
+    <string name="more_ai">Family AI</string>
+    <string name="more_notifications">Сповіщення</string>
+    <string name="more_premium">Premium</string>
+    <string name="more_family_members">Учасники сім\'ї</string>
+    <string name="more_create_family">Створити сім\'ю</string>
+    <string name="more_join_family">Приєднатися</string>
+    <string name="more_profile">Профіль</string>
+    <string name="more_settings">Налаштування</string>
+
+    <string name="settings_title">Налаштування</string>
+    <string name="settings_appearance">Оформлення</string>
+    <string name="settings_theme_light">Світла</string>
+    <string name="settings_theme_dark">Темна</string>
+    <string name="settings_theme_system">Системна</string>
+    <string name="settings_notifications">Сповіщення</string>
+    <string name="settings_security">Безпека</string>
+    <string name="settings_biometric">Біометричне блокування</string>
+    <string name="settings_biometric_sub">Вимагати відбиток або Face ID при відкритті</string>
+    <string name="settings_language">Мова</string>
+    <string name="settings_ai_provider">AI‑провайдер</string>
+    <string name="settings_edit_profile">Редагувати профіль</string>
+    <string name="settings_logout">Вийти</string>
+    <string name="settings_language_updated">Мову оновлено</string>
+    <string name="settings_back">Назад</string>
+
+    <string name="auth_welcome_back">З поверненням</string>
+    <string name="auth_sign_in_subtitle">Увійдіть, щоб продовжити керувати сімейним життям.</string>
+    <string name="auth_email">Email</string>
+    <string name="auth_password">Пароль</string>
+    <string name="auth_remember_me">Запам\'ятати мене</string>
+    <string name="auth_forgot_password">Забули пароль?</string>
+    <string name="auth_sign_in">Увійти</string>
+    <string name="auth_continue_google">Увійти через Google</string>
+    <string name="auth_need_account">Немає акаунта? Зареєструватися</string>
+    <string name="auth_create_account">Створити акаунт</string>
+    <string name="auth_join_title">Ласкаво просимо до FamilyOS</string>
+    <string name="auth_join_subtitle">Створіть акаунт, щоб ділитися завданнями, покупками та розкладом.</string>
+    <string name="auth_display_name">Ім\'я</string>
+    <string name="auth_confirm_password">Підтвердіть пароль</string>
+    <string name="auth_already_have_account">Вже є акаунт? Увійти</string>
+    <string name="auth_reset_password">Скинути пароль</string>
+
+    <string name="channel_general_name">Загальні</string>
+    <string name="channel_general_desc">Загальні сповіщення FamilyOS</string>
+    <string name="channel_tasks_name">Завдання</string>
+    <string name="channel_tasks_desc">Дедлайни та призначення</string>
+    <string name="channel_family_name">Сім\'я</string>
+    <string name="channel_family_desc">Запрошення, чат і учасники</string>
+    <string name="channel_sync_name">Синхронізація</string>
+    <string name="channel_sync_desc">Статус фонової синхронізації</string>
+</resources>

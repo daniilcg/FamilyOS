@@ -1,12 +1,14 @@
 package com.familyos.core.data.di
 
+import android.content.Context
+import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.FirebaseFirestoreSettings
 import com.google.firebase.storage.FirebaseStorage
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
@@ -17,29 +19,30 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object FirebaseModule {
 
-    /** Provides [FirebaseAuth] when Firebase is initialized; never crashes DI on stub config. */
-    @Provides
-    @Singleton
-    fun provideFirebaseAuth(): FirebaseAuth = try {
-        FirebaseAuth.getInstance()
-    } catch (e: Exception) {
-        // Still attempt default instance — HybridAuthRepository avoids calling it when unavailable.
-        FirebaseAuth.getInstance()
+    private fun ensureFirebase(context: Context) {
+        if (FirebaseApp.getApps(context).isEmpty()) {
+            FirebaseApp.initializeApp(context)
+        }
     }
 
-    /** Provides [FirebaseFirestore] with offline persistence enabled. */
     @Provides
     @Singleton
-    fun provideFirebaseFirestore(): FirebaseFirestore {
-        val firestore = FirebaseFirestore.getInstance()
-        firestore.firestoreSettings = FirebaseFirestoreSettings.Builder()
-            .setPersistenceEnabled(true)
-            .build()
-        return firestore
+    fun provideFirebaseAuth(@ApplicationContext context: Context): FirebaseAuth {
+        ensureFirebase(context)
+        return FirebaseAuth.getInstance()
     }
 
-    /** Provides [FirebaseStorage]. */
     @Provides
     @Singleton
-    fun provideFirebaseStorage(): FirebaseStorage = FirebaseStorage.getInstance()
+    fun provideFirebaseFirestore(@ApplicationContext context: Context): FirebaseFirestore {
+        ensureFirebase(context)
+        return FirebaseFirestore.getInstance()
+    }
+
+    @Provides
+    @Singleton
+    fun provideFirebaseStorage(@ApplicationContext context: Context): FirebaseStorage {
+        ensureFirebase(context)
+        return FirebaseStorage.getInstance()
+    }
 }

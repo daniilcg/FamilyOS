@@ -35,6 +35,7 @@ import com.familyos.feature.budget.util.formatMoney
 import com.familyos.feature.budget.util.formatMonth
 import com.familyos.feature.budget.viewmodel.BudgetViewModel
 import java.time.ZoneId
+import com.familyos.core.ui.locale.rememberUiStrings
 
 /**
  * Monthly report with balance statistics and Canvas charts.
@@ -46,6 +47,7 @@ fun ReportScreen(
     viewModel: BudgetViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val s = rememberUiStrings()
     val monthStartMillis = state.month
         .atStartOfDay(ZoneId.systemDefault())
         .toInstant()
@@ -54,18 +56,18 @@ fun ReportScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Monthly report") },
+                title = { Text(s.monthlyReport) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = s.back)
                     }
                 },
                 actions = {
                     IconButton(onClick = { viewModel.shiftMonth(false) }) {
-                        Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = "Previous")
+                        Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = s.previous)
                     }
                     IconButton(onClick = { viewModel.shiftMonth(true) }) {
-                        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = "Next")
+                        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = s.next)
                     }
                 },
             )
@@ -73,7 +75,7 @@ fun ReportScreen(
     ) { padding ->
         when {
             state.isLoading && state.summary == null -> FamilyLoading()
-            state.familyId.isNullOrBlank() -> FamilyEmptyState(message = "Join a family to view reports.")
+            state.familyId.isNullOrBlank() -> FamilyEmptyState(message = s.joinFamilyForReports)
             else -> Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -86,20 +88,20 @@ fun ReportScreen(
                 Card(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         val summary = state.summary
-                        Text("Statistics", style = MaterialTheme.typography.titleMedium)
+                        Text(s.statistics, style = MaterialTheme.typography.titleMedium)
                         Text(
-                            "Balance ${formatMoney(summary?.balance ?: 0.0, state.currency)}",
+                            "${s.balance} ${formatMoney(summary?.balance ?: 0.0, state.currency)}",
                             color = if ((summary?.balance ?: 0.0) >= 0) FamilySuccess else FamilyDanger,
                             style = MaterialTheme.typography.headlineSmall,
                         )
-                        Text("Total income: ${formatMoney(summary?.totalIncome ?: 0.0, state.currency)}")
-                        Text("Total expense: ${formatMoney(summary?.totalExpense ?: 0.0, state.currency)}")
-                        Text("Transactions: ${state.transactions.size}")
+                        Text("${s.totalIncome}: ${formatMoney(summary?.totalIncome ?: 0.0, state.currency)}")
+                        Text("${s.totalExpense}: ${formatMoney(summary?.totalExpense ?: 0.0, state.currency)}")
+                        Text("${s.transactionsCount}: ${state.transactions.size}")
                     }
                 }
-                Text("Expenses by category (bars)", style = MaterialTheme.typography.titleMedium)
+                Text(s.expensesByCategoryBars, style = MaterialTheme.typography.titleMedium)
                 CategoryBarChart(values = state.summary?.byCategory.orEmpty(), currency = state.currency)
-                Text("Expenses by category (pie)", style = MaterialTheme.typography.titleMedium)
+                Text(s.expensesByCategoryPie, style = MaterialTheme.typography.titleMedium)
                 CategoryPieChart(values = state.summary?.byCategory.orEmpty(), currency = state.currency)
             }
         }

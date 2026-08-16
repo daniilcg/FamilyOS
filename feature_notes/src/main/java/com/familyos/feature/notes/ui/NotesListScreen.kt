@@ -31,6 +31,7 @@ import com.familyos.core.domain.model.Note
 import com.familyos.core.ui.components.FamilyEmptyState
 import com.familyos.core.ui.components.FamilyLoading
 import com.familyos.feature.notes.viewmodel.NotesUiState
+import com.familyos.core.ui.locale.rememberUiStrings
 
 /**
  * Notes list with search, archive toggle, and create FAB.
@@ -45,12 +46,14 @@ fun NotesListScreen(
     onShowArchivedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val s = rememberUiStrings()
+
     Scaffold(
         modifier = modifier,
-        topBar = { TopAppBar(title = { Text("Notes") }) },
+        topBar = { TopAppBar(title = { Text(s.notesTitle) }) },
         floatingActionButton = {
             FloatingActionButton(onClick = onCreate) {
-                Icon(Icons.Default.Add, contentDescription = "New note")
+                Icon(Icons.Default.Add, contentDescription = s.newNote)
             }
         },
     ) { padding ->
@@ -65,19 +68,19 @@ fun NotesListScreen(
                 onValueChange = onQueryChange,
                 modifier = Modifier.fillMaxWidth(),
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                placeholder = { Text("Search notes and tags") },
+                placeholder = { Text(s.searchNotesTags) },
                 singleLine = true,
             )
             FilterChip(
                 selected = state.showArchived,
                 onClick = { onShowArchivedChange(!state.showArchived) },
-                label = { Text(if (state.showArchived) "Showing archived" else "Active notes") },
+                label = { Text(if (state.showArchived) s.showingArchived else s.activeNotes) },
                 leadingIcon = { Icon(Icons.Default.Archive, contentDescription = null) },
                 modifier = Modifier.padding(vertical = 8.dp),
             )
             when {
                 state.isLoading -> FamilyLoading()
-                state.notes.isEmpty() -> FamilyEmptyState("No notes yet. Capture text, photos, or checklists.")
+                state.notes.isEmpty() -> FamilyEmptyState(s.noNotesYet)
                 else -> LazyColumn(
                     contentPadding = PaddingValues(bottom = 88.dp),
                     verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -93,13 +96,14 @@ fun NotesListScreen(
 
 @Composable
 private fun NoteRow(note: Note, onClick: () -> Unit) {
+    val s = rememberUiStrings()
     ListItem(
-        headlineContent = { Text(note.title.ifBlank { "Untitled" }) },
+        headlineContent = { Text(note.title.ifBlank { s.untitled }) },
         supportingContent = {
             Text(
                 note.body.ifBlank {
                     if (note.checklist.isNotEmpty()) {
-                        "${note.checklist.count { it.isChecked }}/${note.checklist.size} checklist"
+                        s.checklistProgress.format(note.checklist.count { it.isChecked }, note.checklist.size)
                     } else {
                         note.tags.joinToString()
                     }
@@ -109,7 +113,7 @@ private fun NoteRow(note: Note, onClick: () -> Unit) {
             )
         },
         trailingContent = {
-            if (note.isPinned) Icon(Icons.Default.PushPin, contentDescription = "Pinned")
+            if (note.isPinned) Icon(Icons.Default.PushPin, contentDescription = s.pinned)
         },
         modifier = Modifier
             .fillMaxWidth()

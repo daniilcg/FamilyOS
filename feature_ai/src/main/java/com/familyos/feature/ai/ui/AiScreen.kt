@@ -35,6 +35,7 @@ import com.familyos.core.domain.model.AiMessage
 import com.familyos.feature.ai.provider.AiProviderId
 import com.familyos.feature.ai.viewmodel.AiUiMessage
 import com.familyos.feature.ai.viewmodel.AiUiState
+import com.familyos.core.ui.locale.rememberUiStrings
 
 /**
  * Family AI chat UI with provider switching, API key editor, and apply-action CTA.
@@ -51,9 +52,11 @@ fun AiScreen(
     onApplyAction: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val s = rememberUiStrings()
+
     Scaffold(
         modifier = modifier,
-        topBar = { TopAppBar(title = { Text("Family AI") }) },
+        topBar = { TopAppBar(title = { Text(s.familyAi) }) },
     ) { padding ->
         Column(
             Modifier
@@ -72,13 +75,13 @@ fun AiScreen(
             }
             if (!state.isPremium) {
                 Text(
-                    "Premium required for Family AI",
+                    s.premiumRequiredAi,
                     color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.padding(vertical = 8.dp),
                 )
             }
             Text(
-                "${state.providerId.displayName} API key",
+                s.apiKeyForProvider.format(state.providerId.displayName),
                 style = MaterialTheme.typography.titleSmall,
                 modifier = Modifier.padding(top = 8.dp),
             )
@@ -86,10 +89,10 @@ fun AiScreen(
                 value = state.apiKeyDraft,
                 onValueChange = onApiKeyChange,
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("API key") },
+                label = { Text(s.apiKey) },
                 singleLine = true,
                 visualTransformation = PasswordVisualTransformation(),
-                placeholder = { Text("Paste key for ${state.providerId.displayName}") },
+                placeholder = { Text(s.pasteKeyFor.format(state.providerId.displayName)) },
             )
             Button(
                 onClick = onSaveApiKey,
@@ -97,7 +100,7 @@ fun AiScreen(
                     .fillMaxWidth()
                     .padding(top = 4.dp, bottom = 4.dp),
             ) {
-                Text("Save API key")
+                Text(s.saveApiKey)
             }
             state.keySavedMessage?.let {
                 Text(it, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(4.dp))
@@ -113,7 +116,7 @@ fun AiScreen(
             }
             if (state.pendingAction != null) {
                 Button(onClick = onApplyAction, modifier = Modifier.fillMaxWidth()) {
-                    Text("Apply to family (shopping / tasks)")
+                    Text(s.applyToFamily)
                 }
             }
             state.appliedMessage?.let {
@@ -127,15 +130,15 @@ fun AiScreen(
                     value = state.draft,
                     onValueChange = onDraftChange,
                     modifier = Modifier.weight(1f),
-                    placeholder = { Text("e.g. Borscht for 6") },
+                    placeholder = { Text(s.aiPromptHint) },
                     enabled = !state.isSending,
                 )
                 IconButton(onClick = onSend, enabled = state.draft.isNotBlank() && !state.isSending) {
-                    Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send")
+                    Icon(Icons.AutoMirrored.Filled.Send, contentDescription = s.send)
                 }
             }
             Text(
-                "Try: birthday prep · budget 1200 EUR · trip checklist",
+                s.aiTryHints,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                 modifier = Modifier.padding(bottom = 8.dp, top = 4.dp),
