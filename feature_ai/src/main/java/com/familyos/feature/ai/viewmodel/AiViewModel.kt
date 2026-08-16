@@ -220,6 +220,7 @@ class AiViewModel @Inject constructor(
 
     fun applyPendingAction() {
         val action = _state.value.pendingAction ?: return
+        if (!action.canApplyToFamily) return
         val familyId = _state.value.familyId ?: return
         val userId = _state.value.userId ?: return
         viewModelScope.launch {
@@ -245,10 +246,8 @@ class AiViewModel @Inject constructor(
                         else -> "Applied trip packing + tasks for ${action.destination}"
                     }
                 }
-                is AiDomainAction.BudgetPlan -> action.summary.ifBlank {
-                    "Budget plan ready (${action.currency} ${action.total})"
-                }
-                is AiDomainAction.ChatReply -> action.reply
+                is AiDomainAction.BudgetPlan,
+                is AiDomainAction.ChatReply,
                 is AiDomainAction.Unknown -> "No structured action to apply"
             }
             _state.update { it.copy(appliedMessage = message, pendingAction = null) }
@@ -263,6 +262,10 @@ class AiViewModel @Inject constructor(
         is AiDomainAction.ShoppingList ->
             buildString {
                 appendLine("Shopping list: ${action.title}")
+                if (action.notes.isNotBlank()) {
+                    appendLine(action.notes)
+                    appendLine()
+                }
                 action.items.forEach { appendLine("• ${it.quantity} ${it.unit.orEmpty()} ${it.title}".trim()) }
             }
         is AiDomainAction.TaskSet ->

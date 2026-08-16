@@ -114,7 +114,7 @@ fun AiScreen(
                     AiBubble(message)
                 }
             }
-            if (state.pendingAction != null) {
+            if (state.pendingAction?.canApplyToFamily == true) {
                 Button(onClick = onApplyAction, modifier = Modifier.fillMaxWidth()) {
                     Text(s.applyToFamily)
                 }

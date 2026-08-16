@@ -24,6 +24,7 @@ sealed class AiDomainAction {
     data class ShoppingList(
         val title: String,
         val items: List<ApplyAiShoppingListUseCase.AiShoppingLine>,
+        val notes: String = "",
     ) : AiDomainAction()
 
     data class TaskSet(
@@ -55,6 +56,14 @@ sealed class AiDomainAction {
     data class ChatReply(val reply: String) : AiDomainAction()
 
     data class Unknown(val raw: String) : AiDomainAction()
+
+    val canApplyToFamily: Boolean
+        get() = when (this) {
+            is ShoppingList -> items.isNotEmpty()
+            is TaskSet -> tasks.isNotEmpty()
+            is TripChecklist -> packing.isNotEmpty() || tasks.isNotEmpty()
+            is BudgetPlan, is ChatReply, is Unknown -> false
+        }
 }
 
 /**
@@ -65,19 +74,17 @@ class AiResponseParser @Inject constructor(
     private val json: Json,
 ) {
     fun parse(content: String): AiDomainAction {
-        val cleaned = content.trim()
-            .removePrefix("```json")
-            .removePrefix("```")
-            .removeSuffix("```")
-            .trim()
+        val cleaned = extractJsonObject(content)
         return runCatching {
             val root = json.parseToJsonElement(cleaned).jsonObject
-            when (root["action"]?.jsonPrimitive?.contentOrNull) {
-                "create_shopping_list" -> AiDomainAction.ShoppingList(
-                    title = root.string("title") ?: "Shopping list",
-                    items = root.array("items").mapNotNull { it.asShoppingLine() },
+            val items = shoppingLines(root)
+            when (root["action"]?.jsonPrimitive?.contentOrNull?.lowercase()) {
+                "create_shopping_list", "shopping_list", "shopping" -> AiDomainAction.ShoppingList(
+                    title = root.string("title") ?: root.string("dish") ?: "Shopping list",
+                    items = items,
+                    notes = root.string("notes").orEmpty(),
                 )
-                "create_task_set" -> AiDomainAction.TaskSet(
+                "create_task_set", "task_set", "tasks" -> AiDomainAction.TaskSet(
                     goal = root.string("goal") ?: "Goal",
                     tasks = root.array("tasks").mapNotNull { it.asTaskLine() },
                 )
@@ -97,15 +104,45 @@ class AiResponseParser @Inject constructor(
                 )
                 "trip_checklist" -> AiDomainAction.TripChecklist(
                     destination = root.string("destination") ?: "Trip",
-                    packing = root.array("packing").mapNotNull { it.asShoppingLine() },
+                    packing = root.array("packing").ifEmpty { root.array("items") }.mapNotNull { it.asShoppingLine() },
                     tasks = root.array("tasks").mapNotNull { it.asTaskLine() },
                     tips = root.array("tips").mapNotNull { it.jsonPrimitive.contentOrNull },
                 )
-                "chat" -> AiDomainAction.ChatReply(root.string("reply") ?: cleaned)
-                else -> AiDomainAction.Unknown(cleaned)
+                "chat" -> if (items.isNotEmpty()) {
+                    AiDomainAction.ShoppingList(
+                        title = root.string("title") ?: root.string("reply")?.take(80) ?: "Shopping list",
+                        items = items,
+                        notes = root.string("notes") ?: root.string("reply").orEmpty(),
+                    )
+                } else {
+                    AiDomainAction.ChatReply(root.string("reply") ?: cleaned)
+                }
+                else -> if (items.isNotEmpty()) {
+                    AiDomainAction.ShoppingList(
+                        title = root.string("title") ?: "Shopping list",
+                        items = items,
+                        notes = root.string("notes").orEmpty(),
+                    )
+                } else {
+                    AiDomainAction.Unknown(cleaned)
+                }
             }
         }.getOrElse { AiDomainAction.Unknown(cleaned) }
     }
+
+    private fun extractJsonObject(content: String): String {
+        val trimmed = content.trim()
+            .removePrefix("```json")
+            .removePrefix("```")
+            .removeSuffix("```")
+            .trim()
+        val start = trimmed.indexOf('{')
+        val end = trimmed.lastIndexOf('}')
+        return if (start >= 0 && end > start) trimmed.substring(start, end + 1) else trimmed
+    }
+
+    private fun shoppingLines(root: JsonObject) =
+        root.array("items").ifEmpty { root.array("ingredients") }.mapNotNull { it.asShoppingLine() }
 
     private fun JsonObject.string(key: String): String? = this[key]?.jsonPrimitive?.contentOrNull
 
@@ -114,11 +151,16 @@ class AiResponseParser @Inject constructor(
 
     private fun kotlinx.serialization.json.JsonElement.asShoppingLine(): ApplyAiShoppingListUseCase.AiShoppingLine? {
         val o = runCatching { jsonObject }.getOrNull() ?: return null
-        val title = o["title"]?.jsonPrimitive?.contentOrNull?.trim().orEmpty()
+        val title = o["title"]?.jsonPrimitive?.contentOrNull?.trim()
+            ?: o["name"]?.jsonPrimitive?.contentOrNull?.trim()
+            ?: o["ingredient"]?.jsonPrimitive?.contentOrNull?.trim()
+            ?: ""
         if (title.isEmpty()) return null
         return ApplyAiShoppingListUseCase.AiShoppingLine(
             title = title,
-            quantity = o["quantity"]?.jsonPrimitive?.doubleOrNull ?: 1.0,
+            quantity = o["quantity"]?.jsonPrimitive?.doubleOrNull
+                ?: o["quantity"]?.jsonPrimitive?.contentOrNull?.toDoubleOrNull()
+                ?: 1.0,
             unit = o["unit"]?.jsonPrimitive?.contentOrNull,
             category = enumOr(o["category"]?.jsonPrimitive?.contentOrNull, ShoppingCategory.PRODUCTS),
         )

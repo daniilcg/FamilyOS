@@ -9,11 +9,16 @@ object FamilyAiPrompts {
 You are Family AI inside FamilyOS, a family OS for shared life management.
 Always respond with a single valid JSON object. Never wrap JSON in markdown fences.
 Prefer actionable, concise family-friendly suggestions.
+If the user asks what to cook, eat, or for a recipe (any language), you MUST use
+action "create_shopping_list": pick a practical dish, put cooking steps in "notes",
+and put every ingredient to buy in "items". Do not use action "chat" for cooking.
 """.trimIndent()
 
     val SHOPPING_FROM_RECIPE = """
-Task: Generate a shopping list from a recipe description.
-Example user input: "Borscht for 6"
+Task: Turn a cooking / recipe / "what should we eat" request into a shopping list.
+The user may write in any language (e.g. "что приготовить", "what to cook", "borscht for 6").
+If they did not name a dish, choose one simple family meal, set "title" to that dish,
+and put a short how-to in "notes".
 Return JSON:
 {
   "action": "create_shopping_list",
@@ -24,7 +29,7 @@ Return JSON:
   ],
   "notes": string
 }
-Include realistic quantities for the requested servings. Deduplicate ingredients.
+Include realistic quantities. Deduplicate ingredients. Every ingredient that must be bought goes in items.
 """.trimIndent()
 
     val TASKS_FROM_GOAL = """
@@ -78,13 +83,12 @@ Cover documents, clothes, health, transport, and home-leaving tasks.
     fun detectFeaturePrompt(userText: String): String {
         val t = userText.lowercase()
         return when {
-            listOf("recipe", "borscht", "soup", "ingredients", "cook", "meal").any { it in t } ->
-                SHOPPING_FROM_RECIPE
-            listOf("budget", "allocate", "money", "eur", "usd", "spend").any { it in t } ->
+            COOKING_HINTS.any { it in t } -> SHOPPING_FROM_RECIPE
+            listOf("budget", "allocate", "money", "eur", "usd", "spend", "бюджет", "бюджету").any { it in t } ->
                 BUDGET_ALLOCATION
-            listOf("trip", "travel", "pack", "vacation", "weekend", "flight").any { it in t } ->
+            listOf("trip", "travel", "pack", "vacation", "weekend", "flight", "поездк", "подорож", "putovan").any { it in t } ->
                 TRIP_CHECKLIST
-            listOf("birthday", "prepare", "goal", "plan", "tasks", "party").any { it in t } ->
+            listOf("birthday", "prepare", "goal", "plan", "tasks", "party", "день рожден", "день народжен", "рођен").any { it in t } ->
                 TASKS_FROM_GOAL
             else -> """
 Return JSON:
@@ -96,4 +100,16 @@ Return JSON:
 """.trimIndent()
         }
     }
+
+    private val COOKING_HINTS = listOf(
+        "recipe", "borscht", "soup", "ingredients", "cook", "meal", "dinner", "lunch", "breakfast",
+        "dish", "ingredient", "grocery",
+        "рецепт", "готовить", "приготов", "ингредиент", "борщ", "суп", "ужин", "обед", "завтрак",
+        "блюдо", "поесть", "поїсти", "меню", "еда", "їжа", "продукти",
+        "приготув", "вечеря", "обід", "сніданок",
+        "kuvati", "recept", "večera", "ručak", "doručak", "sastojak",
+        "kochen", "rezept", "zutaten", "essen", "gericht",
+        "cuisin", "recette", "ingrédient", "ingredient", "dîner", "repas",
+        "cocinar", "receta", "ingrediente", "cena", "comida",
+    )
 }
