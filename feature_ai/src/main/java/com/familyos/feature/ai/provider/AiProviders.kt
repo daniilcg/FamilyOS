@@ -8,6 +8,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
@@ -141,16 +142,21 @@ class GeminiProvider @Inject constructor(
                 put(
                     "generationConfig",
                     buildJsonObject {
-                        put("temperature", request.temperature)
+                        // Gemini 3 is optimized for temperature 1.0; lower values can loop or degrade.
                         if (request.jsonMode) put("responseMimeType", "application/json")
+                        put(
+                            "thinkingConfig",
+                            buildJsonObject { put("thinkingLevel", "minimal") },
+                        )
                     },
                 )
             }
             val url =
-                "https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey"
+                "https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent"
             val httpRequest = Request.Builder()
                 .url(url)
                 .header("Content-Type", "application/json")
+                .header("x-goog-api-key", apiKey)
                 .post(body.toString().toRequestBody(JSON_MEDIA))
                 .build()
             runCatching {
@@ -160,11 +166,16 @@ class GeminiProvider @Inject constructor(
                         return@withContext Result.failure(httpFailure(response.code, raw))
                     }
                     val root = json.parseToJsonElement(raw).jsonObject
-                    val text = root["candidates"]?.jsonArray
+                    val parts = root["candidates"]?.jsonArray
                         ?.firstOrNull()?.jsonObject
                         ?.get("content")?.jsonObject
                         ?.get("parts")?.jsonArray
-                        ?.firstOrNull()?.jsonObject
+                    val text = parts
+                        ?.mapNotNull { it.jsonObject }
+                        ?.firstOrNull { part ->
+                            val isThought = part["thought"]?.jsonPrimitive?.booleanOrNull == true
+                            !isThought && !part["text"]?.jsonPrimitive?.contentOrNull.isNullOrBlank()
+                        }
                         ?.get("text")?.jsonPrimitive?.contentOrNull
                         ?: return@withContext Result.failure(AppError.Remote("Empty Gemini response"))
                     Result.success(
@@ -181,7 +192,7 @@ class GeminiProvider @Inject constructor(
         }
 
     companion object {
-        private const val DEFAULT_MODEL = "gemini-2.0-flash"
+        private const val DEFAULT_MODEL = "gemini-3-flash-preview"
         private val JSON_MEDIA = "application/json".toMediaType()
     }
 }
