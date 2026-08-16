@@ -27,9 +27,9 @@ keystore.properties
 # Kotlin
 .kotlin/
 
-# Logs / tooling
-*.log
-build_full.log
+# Issued Premium keys log (created by the Windows issuer)
+tools/key_issuer/issued_keys.csv
+tools/key_issuer/build/
 
 # OS
 Thumbs.db

@@ -19,6 +19,7 @@ interface BillingRepository {
         purchaseToken: String,
         productId: String,
     ): Result<SubscriptionInfo>
+    suspend fun grantDeveloperPremium(familyId: String): Result<SubscriptionInfo>
     suspend fun restorePurchases(familyId: String): Result<SubscriptionInfo>
     suspend fun queryProductDetails(): Result<List<BillingProductDetails>>
     suspend fun cancelLocally(familyId: String): Result<SubscriptionInfo>

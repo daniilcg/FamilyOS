@@ -91,6 +91,12 @@ service cloud.firestore {
         allow delete: if isAdmin(familyId)
           || (memberId == uid() && !isOwner(familyId));
       }
+
+      match /subscription/{docId} {
+        allow read: if isFamilyMember(familyId);
+        allow create, update: if isAdmin(familyId);
+        allow delete: if isOwner(familyId);
+      }
     }
 
     // Top-level members mirror (optional dual-write shape)

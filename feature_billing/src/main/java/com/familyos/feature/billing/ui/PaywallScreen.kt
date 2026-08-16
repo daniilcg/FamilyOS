@@ -76,9 +76,16 @@ fun PaywallScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(
-                if (state.subscription?.isPremium == true) s.onPremium else s.upgradeFamilyOs,
+                if (state.isPremium) s.onPremium else s.upgradeFamilyOs,
                 style = MaterialTheme.typography.headlineMedium,
             )
+            if (state.entitlements?.isDeveloperFamily == true) {
+                Text(
+                    "SEGAL COMMUNICATIONS · lifetime Premium for this family",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
             Text(BillingViewModel.FREE_LIMITS_TEXT)
             Text(BillingViewModel.PREMIUM_LIMITS_TEXT)
 
@@ -95,14 +102,14 @@ fun PaywallScreen(
                 title = s.monthly,
                 price = monthly?.formattedPrice ?: "…",
                 subtitle = monthly?.description ?: BillingProducts.PREMIUM_MONTHLY,
-                enabled = !state.isPurchasing && state.subscription?.isPremium != true,
+                enabled = !state.isPurchasing && !state.isPremium,
                 onClick = onPurchaseMonthly,
             )
             PlanCard(
                 title = s.yearly,
                 price = yearly?.formattedPrice ?: "…",
                 subtitle = yearly?.description ?: BillingProducts.PREMIUM_YEARLY,
-                enabled = !state.isPurchasing && state.subscription?.isPremium != true,
+                enabled = !state.isPurchasing && !state.isPremium,
                 onClick = onPurchaseYearly,
             )
 
@@ -119,7 +126,7 @@ fun PaywallScreen(
             OutlinedButton(
                 onClick = onOpenPayPal,
                 modifier = Modifier.fillMaxWidth(),
-                enabled = state.subscription?.isPremium != true,
+                enabled = !state.isPremium,
             ) {
                 Text(s.payWithPaypal.format(BillingConstants.PAYPAL_HANDLE))
             }
@@ -128,19 +135,19 @@ fun PaywallScreen(
                 onValueChange = onRedeemCodeChange,
                 modifier = Modifier.fillMaxWidth(),
                 label = { Text(s.activationCode) },
-                placeholder = { Text(BillingConstants.REDEEM_CODE) },
+                placeholder = { Text("FOS-XXXXXXXX-365-XXXXXXXX") },
                 singleLine = true,
-                enabled = state.subscription?.isPremium != true,
+                enabled = !state.isPremium,
             )
             Text(
-                s.afterPaypalHint.format(BillingConstants.PAYPAL_HANDLE, BillingConstants.REDEEM_CODE),
+                s.afterPaypalHint.format(BillingConstants.PAYPAL_HANDLE, "FOS-…"),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f),
             )
             Button(
                 onClick = onRedeemPayPalCode,
                 modifier = Modifier.fillMaxWidth(),
-                enabled = state.redeemCode.isNotBlank() && state.subscription?.isPremium != true,
+                enabled = state.redeemCode.isNotBlank() && !state.isPremium,
             ) {
                 Text(s.activatePremium)
             }

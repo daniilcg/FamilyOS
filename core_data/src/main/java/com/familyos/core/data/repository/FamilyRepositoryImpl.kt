@@ -87,7 +87,7 @@ class FamilyRepositoryImpl @Inject constructor(
             familyDao.upsertFamily(family.toEntity())
             val owner = userDao.getById(ownerId)?.toDomain()
             val member = FamilyMember(
-                id = UUID.randomUUID().toString(),
+                id = ownerId,
                 familyId = family.id,
                 userId = ownerId,
                 displayName = owner?.displayName ?: "Owner",
@@ -124,7 +124,7 @@ class FamilyRepositoryImpl @Inject constructor(
         if (existing != null) return@runCatching family
         val now = System.currentTimeMillis()
         val member = FamilyMember(
-            id = UUID.randomUUID().toString(),
+            id = userId,
             familyId = family.id,
             userId = userId,
             displayName = displayName,

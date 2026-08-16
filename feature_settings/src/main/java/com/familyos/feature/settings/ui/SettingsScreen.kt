@@ -183,6 +183,31 @@ fun SettingsScreen(
                 HorizontalDivider()
                 Spacer(modifier = Modifier.height(12.dp))
 
+                if (state.isDeveloper) {
+                    SectionTitle("SEGAL COMMUNICATIONS")
+                    Text(
+                        "Developer account · lifetime Premium for your family and everyone you invite.",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    if (state.currentEmail.isNotBlank()) {
+                        Text(
+                            state.currentEmail,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(top = 4.dp),
+                        )
+                    }
+                    Text(
+                        "Issue customer keys in the Windows app FamilyOS-KeyIssuer.exe (tools/key_issuer). Clients enter the key in Premium. AI keys: Family AI screen or local.properties.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f),
+                        modifier = Modifier.padding(top = 8.dp),
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    HorizontalDivider()
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
+
                 SectionTitle(stringResource(R.string.settings_ai_provider))
                 AiProviderOption.entries.forEach { option ->
                     Row(

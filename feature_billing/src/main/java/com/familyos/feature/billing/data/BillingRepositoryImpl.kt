@@ -22,6 +22,7 @@ import com.familyos.core.domain.model.SubscriptionPlan
 import com.familyos.core.domain.model.SubscriptionStatus
 import com.familyos.core.domain.repository.BillingProductDetails
 import com.familyos.core.domain.repository.BillingRepository
+import com.familyos.core.domain.repository.SubscriptionRemoteStore
 import com.familyos.core.domain.util.AppError
 import com.familyos.core.domain.util.Result
 import com.familyos.feature.billing.BillingConstants
@@ -55,6 +56,7 @@ private val Context.billingDataStore by preferencesDataStore("familyos_billing")
 @Singleton
 class BillingRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,
+    private val remoteStore: SubscriptionRemoteStore,
 ) : BillingRepository, PurchasesUpdatedListener {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
@@ -74,6 +76,8 @@ class BillingRepositoryImpl @Inject constructor(
     /** Single in-flight connection; prevents double startConnection() hangs. */
     @Volatile
     private var connecting: CompletableDeferred<Boolean>? = null
+
+    private val remoteListenIds = mutableSetOf<String>()
 
     private val billingClient: BillingClient = BillingClient.newBuilder(context)
         .setListener(this)
@@ -103,12 +107,15 @@ class BillingRepositoryImpl @Inject constructor(
                 it + (familyId to SubscriptionInfo(familyId = familyId))
             }
         }
+        scope.launch { listenRemote(familyId) }
     }
 
-    override fun observeSubscription(familyId: String): Flow<SubscriptionInfo> =
-        subscriptionByFamily.map { map ->
+    override fun observeSubscription(familyId: String): Flow<SubscriptionInfo> {
+        scope.launch { listenRemote(familyId) }
+        return subscriptionByFamily.map { map ->
             map[familyId] ?: SubscriptionInfo(familyId = familyId)
         }
+    }
 
     override fun observeIsPremium(familyId: String): Flow<Boolean> =
         observeSubscription(familyId).map { it.isPremium }
@@ -173,23 +180,52 @@ class BillingRepositoryImpl @Inject constructor(
             updatedAt = System.currentTimeMillis(),
         )
         subscriptionByFamily.update { it + (familyId to info) }
+        persistManualPremiumMap()
+        runCatching { remoteStore.upsert(info) }
         return Result.success(info)
     }
 
-    suspend fun grantManualPremium(familyId: String): Result<SubscriptionInfo> {
+    suspend fun grantManualPremium(familyId: String, days: Int = BillingConstants.MANUAL_PREMIUM_DAYS.toInt()): Result<SubscriptionInfo> {
         val now = System.currentTimeMillis()
-        val info = SubscriptionInfo(
-            familyId = familyId,
-            plan = SubscriptionPlan.PREMIUM,
-            status = SubscriptionStatus.ACTIVE,
-            productId = BillingConstants.PAYPAL_PRODUCT_ID,
-            purchaseToken = BillingConstants.PAYPAL_TOKEN,
-            expiresAt = now + BillingConstants.MANUAL_PREMIUM_DAYS * 24L * 60L * 60L * 1000L,
-            autoRenewing = false,
-            updatedAt = now,
+        val lifetime = days <= 0
+        return applyGrant(
+            SubscriptionInfo(
+                familyId = familyId,
+                plan = SubscriptionPlan.PREMIUM,
+                status = SubscriptionStatus.ACTIVE,
+                productId = BillingConstants.PAYPAL_PRODUCT_ID,
+                purchaseToken = BillingConstants.PAYPAL_TOKEN,
+                expiresAt = if (lifetime) null else now + days * 24L * 60L * 60L * 1000L,
+                autoRenewing = false,
+                updatedAt = now,
+            ),
         )
-        subscriptionByFamily.update { it + (familyId to info) }
+    }
+
+    override suspend fun grantDeveloperPremium(familyId: String): Result<SubscriptionInfo> {
+        val existing = subscriptionByFamily.value[familyId]
+        if (existing?.isPremium == true && existing.productId == BillingConstants.DEVELOPER_PRODUCT_ID) {
+            return Result.success(existing)
+        }
+        val now = System.currentTimeMillis()
+        return applyGrant(
+            SubscriptionInfo(
+                familyId = familyId,
+                plan = SubscriptionPlan.PREMIUM,
+                status = SubscriptionStatus.ACTIVE,
+                productId = BillingConstants.DEVELOPER_PRODUCT_ID,
+                purchaseToken = BillingConstants.DEVELOPER_TOKEN,
+                expiresAt = null,
+                autoRenewing = true,
+                updatedAt = now,
+            ),
+        )
+    }
+
+    private suspend fun applyGrant(info: SubscriptionInfo): Result<SubscriptionInfo> {
+        subscriptionByFamily.update { it + (info.familyId to info) }
         persistManualPremiumMap()
+        runCatching { remoteStore.upsert(info) }
         return Result.success(info)
     }
 
@@ -204,7 +240,7 @@ class BillingRepositoryImpl @Inject constructor(
 
     private suspend fun persistManualPremiumMap() {
         val manual = subscriptionByFamily.value.filterValues {
-            it.productId == BillingConstants.PAYPAL_PRODUCT_ID
+            BillingConstants.isManualProduct(it.productId)
         }
         context.billingDataStore.edit { prefs ->
             prefs[manualPremiumKey] = json.encodeToString(manual)
@@ -216,7 +252,7 @@ class BillingRepositoryImpl @Inject constructor(
             setActiveFamilyId(familyId)
             // Keep manual PayPal premium if present
             val existing = subscriptionByFamily.value[familyId]
-            if (existing?.isPremium == true && existing.productId == BillingConstants.PAYPAL_PRODUCT_ID) {
+            if (existing?.isPremium == true && BillingConstants.isManualProduct(existing.productId)) {
                 return@withContext Result.success(existing)
             }
             if (!ensureConnected()) {
@@ -287,6 +323,32 @@ class BillingRepositoryImpl @Inject constructor(
                 }
             }
         }
+    }
+
+    private suspend fun listenRemote(familyId: String) {
+        if (familyId.isBlank()) return
+        val start = synchronized(remoteListenIds) { remoteListenIds.add(familyId) }
+        if (!start) return
+        remoteStore.observe(familyId).collect { remote ->
+            if (remote == null) return@collect
+            val local = subscriptionByFamily.value[familyId]
+            val chosen = pickBetter(local, remote)
+            if (chosen != local) {
+                subscriptionByFamily.update { it + (familyId to chosen) }
+                if (BillingConstants.isManualProduct(chosen.productId)) {
+                    persistManualPremiumMap()
+                }
+            }
+        }
+    }
+
+    private fun pickBetter(local: SubscriptionInfo?, remote: SubscriptionInfo): SubscriptionInfo {
+        if (local == null) return remote
+        if (remote.isPremium && !local.isPremium) return remote
+        if (local.isPremium && !remote.isPremium) return local
+        if (remote.productId == BillingConstants.DEVELOPER_PRODUCT_ID) return remote
+        if (local.productId == BillingConstants.DEVELOPER_PRODUCT_ID) return local
+        return if (remote.updatedAt >= local.updatedAt) remote else local
     }
 
     /**

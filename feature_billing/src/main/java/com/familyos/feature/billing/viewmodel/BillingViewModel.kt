@@ -6,7 +6,9 @@ import android.content.Intent
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.familyos.core.domain.billing.LicenseKey
 import com.familyos.core.domain.model.BillingProducts
+import com.familyos.core.domain.model.DeveloperAccounts
 import com.familyos.core.domain.model.EntitlementLimits
 import com.familyos.core.domain.model.SubscriptionInfo
 import com.familyos.core.domain.repository.BillingProductDetails
@@ -45,7 +47,10 @@ data class BillingUiState(
     val successMessage: String? = null,
     val lastExportFile: File? = null,
     val familyId: String? = null,
-)
+) {
+    val isPremium: Boolean
+        get() = entitlements?.isPremium == true || subscription?.isPremium == true
+}
 
 /**
  * Billing ViewModel for paywall, restore, entitlements, PayPal redeem, and premium exports.
@@ -83,6 +88,9 @@ class BillingViewModel @Inject constructor(
                     return@launch
                 }
                 billingRepositoryImpl.setActiveFamilyId(familyId)
+                if (DeveloperAccounts.isDeveloper(user?.email)) {
+                    billingRepositoryImpl.grantDeveloperPremium(familyId)
+                }
                 // Show paywall immediately — never wait on Play Billing connection.
                 _state.update {
                     it.copy(
@@ -193,19 +201,40 @@ class BillingViewModel @Inject constructor(
     fun redeemPayPalCode(code: String = _state.value.redeemCode) {
         val familyId = _state.value.familyId ?: return
         val trimmed = code.trim()
-        if (!trimmed.equals(BillingConstants.REDEEM_CODE, ignoreCase = true)) {
-            _state.update { it.copy(errorMessage = "Invalid activation code") }
-            return
-        }
         viewModelScope.launch {
-            when (val result = billingRepositoryImpl.grantManualPremium(familyId)) {
-                is Result.Success -> _state.update {
-                    it.copy(
-                        subscription = result.data,
-                        redeemCode = "",
-                        successMessage = "Premium activated for 1 year (PayPal)",
-                        errorMessage = null,
-                    )
+            val signed = LicenseKey.verify(trimmed)
+            val result = when {
+                BillingConstants.isDeveloperCode(trimmed) ->
+                    billingRepositoryImpl.grantDeveloperPremium(familyId)
+                signed != null ->
+                    billingRepositoryImpl.grantManualPremium(familyId, signed.days)
+                BillingConstants.isLegacyCustomerCode(trimmed) ->
+                    billingRepositoryImpl.grantManualPremium(familyId)
+                else -> {
+                    _state.update { it.copy(errorMessage = "Invalid activation code") }
+                    return@launch
+                }
+            }
+            when (result) {
+                is Result.Success -> {
+                    val message = when {
+                        result.data.productId == BillingConstants.DEVELOPER_PRODUCT_ID ->
+                            "Developer Premium activated (lifetime)"
+                        result.data.expiresAt == null ->
+                            "Premium activated (lifetime)"
+                        else -> {
+                            val days = signed?.days ?: BillingConstants.MANUAL_PREMIUM_DAYS.toInt()
+                            "Premium activated for $days days"
+                        }
+                    }
+                    _state.update {
+                        it.copy(
+                            subscription = result.data,
+                            redeemCode = "",
+                            successMessage = message,
+                            errorMessage = null,
+                        )
+                    }
                 }
                 is Result.Error -> _state.update { it.copy(errorMessage = result.error.message) }
             }

@@ -4,7 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.familyos.core.domain.model.ThemeMode
 import com.familyos.core.domain.model.UserPreferences
+import com.familyos.core.domain.model.DeveloperAccounts
 import com.familyos.core.domain.repository.UserPreferencesRepository
+import com.familyos.core.domain.usecase.auth.GetCurrentUserUseCase
 import com.familyos.core.domain.usecase.auth.LogoutUseCase
 import com.familyos.core.domain.util.Result
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -27,6 +29,8 @@ import javax.inject.Inject
  */
 data class SettingsUiState(
     val preferences: UserPreferences = UserPreferences(),
+    val currentEmail: String = "",
+    val isDeveloper: Boolean = false,
     val isLoading: Boolean = true,
     val errorMessage: String? = null,
     val infoMessage: String? = null,
@@ -55,6 +59,7 @@ enum class AiProviderOption(val id: String, val label: String) {
 class SettingsViewModel @Inject constructor(
     private val userPreferencesRepository: UserPreferencesRepository,
     private val logoutUseCase: LogoutUseCase,
+    private val getCurrentUser: GetCurrentUserUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -65,8 +70,16 @@ class SettingsViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
+            val user = getCurrentUser()
             userPreferencesRepository.observe().collectLatest { prefs ->
-                _uiState.update { it.copy(preferences = prefs, isLoading = false) }
+                _uiState.update {
+                    it.copy(
+                        preferences = prefs,
+                        currentEmail = user?.email.orEmpty(),
+                        isDeveloper = DeveloperAccounts.isDeveloper(user?.email),
+                        isLoading = false,
+                    )
+                }
             }
         }
     }

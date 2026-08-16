@@ -68,6 +68,22 @@ class BillingRepositoryImpl @Inject constructor(
         info
     }
 
+    override suspend fun grantDeveloperPremium(familyId: String): Result<SubscriptionInfo> =
+        Result.runCatching {
+            val info = SubscriptionInfo(
+                familyId = familyId,
+                plan = SubscriptionPlan.PREMIUM,
+                status = SubscriptionStatus.ACTIVE,
+                productId = "developer_lifetime",
+                purchaseToken = "developer",
+                expiresAt = null,
+                autoRenewing = true,
+                updatedAt = System.currentTimeMillis(),
+            )
+            firestoreDataSource.upsertSubscription(info.toDto())
+            info
+        }
+
     override suspend fun restorePurchases(familyId: String): Result<SubscriptionInfo> =
         Result.runCatching {
             val info = SubscriptionInfo(

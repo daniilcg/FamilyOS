@@ -11,6 +11,7 @@ import com.familyos.core.data.repository.HybridAuthRepository
 import com.familyos.core.data.repository.NoteRepositoryImpl
 import com.familyos.core.data.repository.NotificationRepositoryImpl
 import com.familyos.core.data.repository.ShoppingRepositoryImpl
+import com.familyos.core.data.repository.SubscriptionRemoteStoreImpl
 import com.familyos.core.data.repository.TaskRepositoryImpl
 import com.familyos.core.data.repository.UserPreferencesRepositoryImpl
 import com.familyos.core.data.sync.SyncQueueRepositoryImpl
@@ -25,6 +26,7 @@ import com.familyos.core.domain.repository.FamilyRepository
 import com.familyos.core.domain.repository.NoteRepository
 import com.familyos.core.domain.repository.NotificationRepository
 import com.familyos.core.domain.repository.ShoppingRepository
+import com.familyos.core.domain.repository.SubscriptionRemoteStore
 import com.familyos.core.domain.repository.SyncRepository
 import com.familyos.core.domain.repository.TaskRepository
 import com.familyos.core.domain.repository.UserPreferencesRepository
@@ -56,4 +58,5 @@ abstract class RepositoryModule {
     @Binds @Singleton abstract fun bindAiRepository(impl: AiRepositoryImpl): AiRepository
     @Binds @Singleton abstract fun bindSyncRepository(impl: SyncQueueRepositoryImpl): SyncRepository
     @Binds @Singleton abstract fun bindUserPreferencesRepository(impl: UserPreferencesRepositoryImpl): UserPreferencesRepository
+    @Binds @Singleton abstract fun bindSubscriptionRemoteStore(impl: SubscriptionRemoteStoreImpl): SubscriptionRemoteStore
 }
